@@ -1,0 +1,262 @@
+
+/* Gill Sans is a system font — no import needed */
+:root{--bg:#0f0f12;--surface:#18181e;--surface2:#1e1e26;--border:#2a2a36;--accent:#f4bdc3;--accent-dim:rgba(244,189,195,0.09);--text:#f0f0ee;--muted:#8888a0;--muted2:#55556a;--radius:8px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+header{display:flex;align-items:center;gap:14px;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--surface);}
+.logo{width:41px;height:28px;background:transparent;border-radius:0;display:grid;place-items:center;flex-shrink:0;}
+header h1{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.06em;}
+header p{font-size:.6rem;color:var(--muted);margin-top:2px;}
+
+.app{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 71px);}
+aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;}
+.sidebar-inner{padding:18px 16px;display:flex;flex-direction:column;gap:18px;flex:1;}
+.s-label{font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+
+.ctrl{display:flex;flex-direction:column;gap:6px;}
+.ctrl label{font-size:.6rem;color:var(--muted);}
+.ctrl select,.ctrl input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;width:100%;}
+.ctrl select:focus,.ctrl input:focus{border-color:var(--accent);}
+.ctrl input::placeholder{color:var(--muted2);}
+.ctrl input:disabled{opacity:.4;cursor:not-allowed;}
+.paper-hint{font-size:.56rem;color:var(--muted2);margin-top:5px;}
+.paper-hint b{color:var(--accent);}
+
+.card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;}
+.card-form.collapsed{gap:0;}
+.card-form.collapsed .card-form-body{display:none;}
+.collapse-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:0 0 0 6px;font-size:.75rem;line-height:1;transition:transform .15s;display:flex;align-items:center;}
+.collapse-btn:hover{color:var(--text);}
+.card-form.collapsed .collapse-btn{transform:rotate(-90deg);}
+.card-form-header{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
+.card-form-header b{color:var(--accent);}
+.remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
+
+.num-row{display:flex;align-items:center;gap:6px;}
+.num-row input{flex:1;min-width:0;}
+.num-divider{color:var(--muted);font-size:.8rem;flex-shrink:0;}
+.num-total{flex:1;min-width:0;background:var(--surface2)!important;border-color:var(--muted2)!important;color:var(--muted)!important;cursor:default;}
+
+.set-row{display:flex;align-items:center;gap:6px;}
+.set-row select{flex:1;}
+.set-sym-thumb{width:24px;height:24px;object-fit:contain;border:1px solid var(--border);border-radius:3px;background:var(--bg);flex-shrink:0;}
+.edition-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;}
+.edition-pill{padding:4px 10px;border-radius:20px;font-size:.6rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;transition:all .15s;}
+.edition-pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.edition-pill.selected{background:var(--accent);color:#111;border-color:var(--accent);}
+.edition-pill:disabled{opacity:.5;cursor:default;}
+.edition-auto-note{font-size:.55rem;color:var(--muted2);font-style:italic;}
+
+.add-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1.5px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;cursor:pointer;transition:all .15s;width:100%;}
+.add-card-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:7px;font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.7rem;font-weight:500;cursor:pointer;border:none;width:100%;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#111;}
+.btn-primary:hover{background:#b5dc35;}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.btn-sm{padding:6px 12px;width:auto;font-size:.62rem;}
+.btn-danger{background:transparent;border:1px solid rgba(255,100,100,.3);color:#ff7070;}
+.btn-danger:hover{background:rgba(255,100,100,.1);}
+.count-badge{display:inline-flex;align-items:center;background:var(--accent-dim);border:1px solid rgba(244,189,195,.3);border-radius:20px;padding:2px 8px;font-size:.58rem;color:var(--accent);margin-left:8px;}
+
+#preview{padding:24px 28px;overflow-x:hidden;overflow-y:auto;background:var(--bg);}
+.page-scale-wrap{overflow:hidden;position:relative;margin:0 auto 32px;}
+.page-scale-wrap .page-wrap{transform-origin:top left;margin:0!important;}
+.preview-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.preview-top h2{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.05em;}
+.preview-actions{display:flex;gap:8px;}
+.page-label{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.page-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.page-wrap{background:white;margin:0;box-shadow:0 4px 40px rgba(0,0,0,.5);border-radius:2px;display:flex;align-items:center;justify-content:center;}
+.card-grid{display:grid;}
+
+/* ── CARD SLOT: 2.5" x 3.5" = 240 x 336px ───────────────────────────
+   Layout mirrors the preview image:
+   - No border between cards, only small corner cut marks
+   - Name: large bold, top area
+   - Number: bold, below name
+   - Symbol: large, centered, generous space
+   - Set name: bold, not italic
+   - Edition: small, normal weight
+   - Code: small, italic, in parens
+-------------------------------------------------------------------- */
+.card-slot{
+  width:240px; height:336px;
+  background:white;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center;
+  overflow:visible; flex-shrink:0;
+  position:relative;
+  /* No border — cut marks only */
+}
+
+/* Corner cut marks — four real elements, one per corner.
+   html2canvas does not support box-shadow on pseudo-elements
+   or CSS outline, so we use inset border + per-corner spans. */
+
+/* Default: no border, dots only (shown via .corner-dot spans) */
+.card-slot { border: 1px solid transparent; }
+
+/* Border type variants */
+.border-solid .card-slot  { border: 1px solid #999; }
+.border-dotted .card-slot { border: 1px dashed #999; }
+.border-none .card-slot   { border: 1px solid transparent; }
+
+/* Dots mode: hide the border, show corner dots */
+.border-dots .card-slot   { border: 1px solid transparent; }
+
+/* Suppress the old ::before pseudo-element entirely */
+.card-slot::before { display: none !important; }
+
+/* Corner dot spans injected by JS */
+.corner-dot {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: #000;
+  z-index: 2;
+  /* hidden by default; shown only in dots mode */
+  display: none;
+}
+.border-dots .corner-dot { display: block; }
+.corner-dot.tl { top: -1px; left: -1px; }
+.corner-dot.tr { top: -1px; right: -1px; }
+.corner-dot.bl { bottom: -1px; left: -1px; }
+.corner-dot.br { bottom: -1px; right: -1px; }
+
+.card-slot.empty{
+  background:white;
+  display:flex; align-items:center; justify-content:center;
+}
+.card-slot.empty::after{
+  content:"BLANK";
+  font-size:1.6rem;
+  font-weight:700;
+  color:#ddd;
+  letter-spacing:.15em;
+}
+.card-slot.empty .empty-slot-label{ display:none; }
+.empty-slot-label{
+  color:#d0d0d0; font-size:.54rem; font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+}
+
+/* Card content wrapper — vertically centered group */
+.cs-inner{
+  display:flex; flex-direction:column; align-items:center;
+  width:100%; padding:0 20px;
+  gap:0; overflow:hidden;
+}
+
+/* Name: large, bold, serif-adjacent feel */
+.cs-name{
+  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+  font-size:1.85rem; font-weight:700;
+  color:#111; line-height:1.2;
+  margin-bottom:5px;
+  width:100%;
+}
+
+/* Number: bold, prominent */
+.cs-number{
+  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+  font-size:1.45rem; font-weight:700;
+  color:#111;
+  margin-bottom:12px;
+}
+.cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:12px; }
+
+/* Symbol: large, centered */
+.cs-symbol-wrap{
+  width:84px; height:84px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:10px;
+}
+.cs-symbol{ width:80px; height:80px; object-fit:contain; }
+.cs-symbol-placeholder{
+  width:60px; height:60px;
+  border:2px dashed #ddd; border-radius:6px;
+  display:grid; place-items:center;
+  color:#ccc; font-size:.5rem;
+}
+
+/* Set name: bold, not italic */
+.cs-set{
+  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+  font-size:1.2rem; font-weight:700;
+  color:#111; line-height:1.3;
+  margin-bottom:4px;
+}
+
+/* Edition: smaller, normal weight */
+.cs-edition{
+  font-size:1.1rem; font-weight:400;
+  color:#333;
+  margin-bottom:2px;
+}
+
+/* Code: small, italic */
+.cs-holo{
+  font-size:1.1rem; font-weight:400;
+  color:#333;
+  margin-bottom:2px;
+}
+.cs-variant{
+  font-size:1.1rem; font-weight:400;
+  color:#333;
+  margin-bottom:2px;
+}
+.cs-code{
+  font-size:1.05rem; font-style:italic;
+  color:#555;
+}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;text-align:center;}
+.empty-icon{width:60px;height:60px;border:1.5px dashed var(--border);border-radius:12px;display:grid;place-items:center;}
+.empty-state h3{font-size:.85rem;color:var(--muted);font-weight:400;}
+.empty-state p{font-size:.65rem;color:var(--muted);opacity:.7;}
+
+@media print {
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{background:white!important;margin:0;}
+  header,aside,.preview-top,.page-label{display:none!important;}
+  .app{display:block!important;}
+  #preview{padding:0!important;background:white!important;overflow:visible!important;}
+  .page-wrap{box-shadow:none!important;border-radius:0!important;page-break-after:always;break-after:page;margin:0!important;}
+  .page-wrap:last-child{page-break-after:avoid;break-after:avoid;}
+  .card-slot{break-inside:avoid;page-break-inside:avoid;}
+  .empty-state{display:none!important;}
+}
+
+/* Searchable card picker */
+.card-picker{position:relative;}
+.card-picker-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:5px;color:var(--text);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+  font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;
+  cursor:pointer;
+}
+.card-picker-input:read-only{cursor:pointer;caret-color:transparent;}
+.card-picker-input:focus{border-color:var(--accent);}
+.card-picker-input::placeholder{color:var(--muted2);}
+.card-picker-dropdown{
+  position:absolute;top:100%;left:0;right:0;z-index:999;
+  background:var(--surface2);border:1px solid var(--accent);
+  border-top:none;border-radius:0 0 5px 5px;
+  max-height:200px;overflow-y:auto;
+  display:none;
+}
+.card-picker-dropdown.open{display:block;}
+.card-picker-dropdown::-webkit-scrollbar{width:4px;}
+.card-picker-dropdown::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.card-picker-option{
+  padding:6px 8px;font-size:.66rem;cursor:pointer;color:var(--text);
+  transition:background .1s;
+  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
+}
+.card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
+.card-picker-option.no-results{color:var(--muted);cursor:default;}
