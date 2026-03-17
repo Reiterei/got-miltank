@@ -29,6 +29,8 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .ctrl select:focus,.ctrl input:focus{border-color:var(--accent);}
 .ctrl input::placeholder{color:var(--muted2);}
 .ctrl input:disabled{opacity:.4;cursor:not-allowed;}
+.paper-hint{font-size:.56rem;color:var(--muted2);margin-top:5px;}
+.paper-hint b{color:var(--accent);}
 
 .card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;}
 .card-form.collapsed{gap:0;}
@@ -40,6 +42,11 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .card-form-header b{color:var(--accent);}
 .remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
 .remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
+
+.num-row{display:flex;align-items:center;gap:6px;}
+.num-row input{flex:1;min-width:0;}
+.num-divider{color:var(--muted);font-size:.8rem;flex-shrink:0;}
+.num-total{flex:1;min-width:0;background:var(--surface2)!important;border-color:var(--muted2)!important;color:var(--muted)!important;cursor:default;}
 
 .set-row{display:flex;align-items:center;gap:6px;}
 .set-row select{flex:1;}
@@ -59,6 +66,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .btn-primary:disabled{opacity:.35;cursor:not-allowed;}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
 .btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.btn-sm{padding:6px 12px;width:auto;font-size:.62rem;}
 .btn-danger{background:transparent;border:1px solid rgba(255,100,100,.3);color:#ff7070;}
 .btn-danger:hover{background:rgba(255,100,100,.1);}
 .count-badge{display:inline-flex;align-items:center;background:var(--accent-dim);border:1px solid rgba(244,189,195,.3);border-radius:20px;padding:2px 8px;font-size:.58rem;color:var(--accent);margin-left:8px;}
@@ -68,12 +76,23 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .page-scale-wrap .page-wrap{transform-origin:top left;margin:0!important;}
 .preview-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .preview-top h2{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.05em;}
+.preview-actions{display:flex;gap:8px;}
 .page-label{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 .page-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
 .page-wrap{background:white;margin:0;box-shadow:0 4px 40px rgba(0,0,0,.5);border-radius:2px;display:flex;align-items:center;justify-content:center;}
 .card-grid{display:grid;}
 
+/* ── CARD SLOT: 2.5" x 3.5" = 240 x 336px ───────────────────────────
+   Layout mirrors the preview image:
+   - No border between cards, only small corner cut marks
+   - Name: large bold, top area
+   - Number: bold, below name
+   - Symbol: large, centered, generous space
+   - Set name: bold, not italic
+   - Edition: small, normal weight
+   - Code: small, italic, in parens
+-------------------------------------------------------------------- */
 .card-slot{
   width:240px; height:336px;
   background:white;
@@ -82,21 +101,35 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   text-align:center;
   overflow:visible; flex-shrink:0;
   position:relative;
+  /* No border — cut marks only */
 }
 
+/* Corner cut marks — four real elements, one per corner.
+   html2canvas does not support box-shadow on pseudo-elements
+   or CSS outline, so we use inset border + per-corner spans. */
+
+/* Default: no border, dots only (shown via .corner-dot spans) */
 .card-slot { border: 1px solid transparent; }
+
+/* Border type variants */
 .border-solid .card-slot  { border: 1px solid #999; }
 .border-dotted .card-slot { border: 1px dashed #999; }
 .border-none .card-slot   { border: 1px solid transparent; }
+
+/* Dots mode: hide the border, show corner dots */
 .border-dots .card-slot   { border: 1px solid transparent; }
+
+/* Suppress the old ::before pseudo-element entirely */
 .card-slot::before { display: none !important; }
 
+/* Corner dot spans injected by JS */
 .corner-dot {
   position: absolute;
   width: 3px; height: 3px;
   border-radius: 50%;
   background: #000;
   z-index: 2;
+  /* hidden by default; shown only in dots mode */
   display: none;
 }
 .border-dots .corner-dot { display: block; }
@@ -121,12 +154,14 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   color:#d0d0d0; font-size:.54rem; font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
 }
 
+/* Card content wrapper — vertically centered group */
 .cs-inner{
   display:flex; flex-direction:column; align-items:center;
   width:100%; padding:0 20px;
   gap:0; overflow:hidden;
 }
 
+/* Name: large, bold, serif-adjacent feel */
 .cs-name{
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.85rem; font-weight:700;
@@ -135,6 +170,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   width:100%;
 }
 
+/* Number: bold, prominent */
 .cs-number{
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.45rem; font-weight:700;
@@ -143,13 +179,21 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 }
 .cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:12px; }
 
+/* Symbol: large, centered */
 .cs-symbol-wrap{
   width:84px; height:84px;
   display:flex; align-items:center; justify-content:center;
   margin-bottom:10px;
 }
 .cs-symbol{ width:80px; height:80px; object-fit:contain; }
+.cs-symbol-placeholder{
+  width:60px; height:60px;
+  border:2px dashed #ddd; border-radius:6px;
+  display:grid; place-items:center;
+  color:#ccc; font-size:.5rem;
+}
 
+/* Set name: bold, not italic */
 .cs-set{
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.2rem; font-weight:700;
@@ -157,6 +201,19 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   margin-bottom:4px;
 }
 
+/* Edition: smaller, normal weight */
+.cs-edition{
+  font-size:1.1rem; font-weight:400;
+  color:#333;
+  margin-bottom:2px;
+}
+
+/* Code: small, italic */
+.cs-holo{
+  font-size:1.1rem; font-weight:400;
+  color:#333;
+  margin-bottom:2px;
+}
 .cs-variant{
   font-size:1.1rem; font-weight:400;
   color:#333;
@@ -184,6 +241,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   .empty-state{display:none!important;}
 }
 
+/* Searchable card picker */
 .card-picker{position:relative;}
 .card-picker-input{
   width:100%;background:var(--bg);border:1px solid var(--border);
@@ -212,12 +270,11 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
 .card-picker-option.no-results{color:var(--muted);cursor:default;}
 </style>
-</head>
-<body>
 <header>
   <div class="logo"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;display:block;" alt="logo"/></div>
   <div>
     <h1>POKEMONTCGSPECIES PLACEHOLDER CARDS</h1>
+
   </div>
 </header>
 
@@ -230,7 +287,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   </div>
 </div>
 <style>@keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}</style>
-
 <div class="app" style="display:none;">
   <aside>
     <div class="sidebar-inner">
@@ -258,7 +314,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
       <div>
         <div class="s-label">Cards <span class="count-badge" id="card-count">0</span></div>
         <div id="pokemon-filter-section"></div>
-        <div id="card-forms"></div>
+  <div id="card-forms"></div>
         <button class="add-card-btn" onclick="addCard()">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Add Card
@@ -279,28 +335,24 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   <div id="preview">
     <div class="preview-top">
       <h2>PREVIEW <span id="pg-label" style="font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.62rem;color:var(--muted);font-weight:400;margin-left:10px;"></span></h2>
+      <div class="preview-actions">
+      </div>
     </div>
     <div id="pages-container">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </div>
-        <h3>No cards yet</h3>
-        <p>Add a card using the sidebar</p>
-      </div>
-    </div>
-  </div>
-</div>
-
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg></div><h3>No cards yet</h3><p>Add a card using the sidebar</p></div></div></div></aside></div>
 <script>
 // ── CONFIGURATION ────────────────────────────────────
+// Replace these with your own Google Sheets published CSV URLs
+// See README for instructions on how to set these up
 var CONFIG = {
   CARDS_SHEET_URL:   'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5MUX9FmQ11gYG0UI3M86GguXvcHviaY7XI9ZQXZFpTDurXcpBPB-OXQefBv_h7tGR08mIMprsOMel/pub?gid=0&single=true&output=csv',
   SETS_SHEET_URL:    'https://docs.google.com/spreadsheets/d/e/2PACX-1vStKDQ-Z6Hm5eH5v8qAxuq6w2jGW_jnyeaKcqrgm1HKGCKi4hkqg3Voy4_xOfovthzfM-qduwqVDE6s/pub?gid=727524711&single=true&output=csv',
   POKEMON_SHEET_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDzKb6cjvjhYlbU_2-23WzMJ9t2tWOz9n0TePOtiWtX0hZ7i88HnptGvXh7eLz_ANUg_cNv5zFawQ_/pub?gid=1479465458&single=true&output=csv',
 };
 
-// ── DATA ──────────────────────────────────────────────
+// ── DATA (populated from Google Sheets on load) ───────
 var SET_DATA      = {};
 var SET_CARD_DATA = {};
 var KNOWN_SETS    = [];
@@ -321,18 +373,19 @@ var PAPER_DATA = {
   'A4-L':      { css:'A4 landscape',      pageW:11.69, pageH:8.27,  margin:0.35, cols:4, rows:2 },
 };
 
+var SET_CARD_DATA = {};
 var CARD_W_PX    = 240;
 var CARD_H_PX    = 336;
 var DPI          = 96;
 var cards        = [];
 var cardIdCtr    = 0;
-var pokemonFilter = ''; 
+var pokemonFilter = ''; // '' = All
 var includeCameo = false;
-var includeSerials = false;
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var collapsedIds = {};
 
+// ── PAPER ────────────────────────────────────────────
 // ── POKEMON FILTER ───────────────────────────────────
 var activePokemonPickerId = null;
 
@@ -347,6 +400,7 @@ document.addEventListener('mousedown', function(e) {
 function buildPokemonOptions(filter) {
   var f = filter.toLowerCase();
   var opts = '';
+  // All option
   if (!f || 'all'.indexOf(f) !== -1) {
     var isSelAll = pokemonFilter === '';
     opts += '<div class="card-picker-option' + (isSelAll ? ' highlighted' : '') + '"'
@@ -423,7 +477,8 @@ function pickPokemon(e, uid, name) {
         });
         if (!hasMatch) {
           c.set = ''; c.cardKey = -1; c.name = ''; c.cardNum = '';
-          c.variantLabels = []; c.serials = [];
+          c.editions = []; c.holos = []; c.serials = [];
+          c.variantLabels = []; c.customNotes = [];
         }
       }
     }
@@ -464,15 +519,10 @@ function toggleCameo(checked) {
   renderPreview();
 }
 
-function toggleSerials(checked) {
-  includeSerials = checked;
-  renderForms();
-  renderPreview();
-}
-
 function matchesPokemonFilter(card) {
   if (!pokemonFilter) return true;
   var f = pokemonFilter.toLowerCase();
+  // If card has primary field, use exact match against primary/cameo only
   if (card.primary !== undefined) {
     if (card.primary) {
       var primaries = card.primary.split(',');
@@ -488,6 +538,7 @@ function matchesPokemonFilter(card) {
     }
     return false;
   }
+  // Fallback: match against card name (old data without primary field)
   if (card.name.toLowerCase().indexOf(f) !== -1) return true;
   return false;
 }
@@ -517,6 +568,7 @@ function toggleCardCollapse(cardId, e) {
 
 function setBorderType(type) {
   currentBorderType = type;
+  // Update border class on all card-grids without re-rendering
   var grids = document.querySelectorAll('.card-grid');
   var allTypes = ['border-dots','border-solid','border-dotted','border-none'];
   grids.forEach(function(g) {
@@ -528,6 +580,7 @@ function setBorderType(type) {
 function setPaper(name) {
   currentPaper = name;
   var p = PAPER_DATA[name];
+  var perPage = p.cols * p.rows;
   var el = document.getElementById('print-page-style');
   if (!el) { el = document.createElement('style'); el.id = 'print-page-style'; document.head.appendChild(el); }
   el.textContent = '@media print { @page { size: ' + p.css + '; margin: ' + p.margin + 'in; } }';
@@ -545,12 +598,19 @@ function handleFieldEvent(e) {
   if (!id || !field) return;
   var c = cards.find(function(c) { return c.id === id; });
   if (!c) return;
+  // customNote inputs are handled by updateCustomNote directly
+  if (field && field.indexOf('customNote') === 0) return;
   c[field] = el.value;
   if (field === 'set') {
+    var info = SET_DATA[el.value];
+    var eds2 = (info && info.editions) ? info.editions : [];
+    c.editions = eds2.length === 1 ? [eds2[0]] : [];
     c.cardNum      = '';
+    c.holos        = [];
     c.cardKey      = -1;
     c.name         = '';
     c.variantLabels = [];
+    c.customNotes  = [];
     renderForms();
   } else if (field === 'variantLabels') {
     renderForms();
@@ -561,15 +621,23 @@ function handleFieldEvent(e) {
 // ── CARDS ────────────────────────────────────────────
 function addCard(data) {
   data = data || {};
+  var initEditions = data.editions || [];
+  if (!initEditions.length && data.set && SET_DATA[data.set]) {
+    var eds = SET_DATA[data.set].editions;
+    if (eds.length === 1) initEditions = [eds[0]];
+  }
   cards.push({
     id:      ++cardIdCtr,
     name:    data.name    || '',
     cardNum: data.cardNum || '',
     set:     data.set     || '',
+    editions: initEditions,
+    holos:        data.holos        || [],
     code:         data.code         || '',
     cardKey:      typeof data.cardKey !== 'undefined' ? data.cardKey : -1,
     variantLabels: data.variantLabels || [],
-    serials:      data.serials      || []
+    serials:      data.serials      || [],
+    customNotes:  data.customNotes   || []
   });
   renderForms();
   renderPreview();
@@ -608,6 +676,36 @@ function toggleSerial(btn, serial) {
   renderPreview();
 }
 
+function toggleHolo(btn, holo) {
+  var id = parseInt(btn.closest('.card-form').dataset.cardid);
+  var c = cards.find(function(c) { return c.id === id; });
+  if (!c) return;
+  if (!c.holos) c.holos = [];
+  var idx = c.holos.indexOf(holo);
+  if (idx === -1) {
+    c.holos.push(holo);
+  } else {
+    c.holos.splice(idx, 1);
+  }
+  btn.classList.toggle('selected', c.holos.indexOf(holo) !== -1);
+  renderPreview();
+}
+
+function toggleEdition(btn, ed) {
+  var id = parseInt(btn.closest('.card-form').dataset.cardid);
+  var c = cards.find(function(c) { return c.id === id; });
+  if (!c) return;
+  if (!c.editions) c.editions = [];
+  var idx = c.editions.indexOf(ed);
+  if (idx === -1) {
+    c.editions.push(ed);
+  } else {
+    c.editions.splice(idx, 1);
+  }
+  btn.classList.toggle('selected', c.editions.indexOf(ed) !== -1);
+  renderPreview();
+}
+
 function clearAll() {
   cards = [];
   renderForms();
@@ -634,22 +732,26 @@ function buildPickerOptions(selectedKey, filter, cardSet) {
   return opts || '<div class="card-picker-option no-results">No cards found</div>';
 }
 
+// Track which picker is open so we can close it from a single global handler
 var activePickerId = null;
 
 document.addEventListener('mousedown', function(e) {
   if (activePickerId === null) return;
   var drop  = document.getElementById('picker-drop-'  + activePickerId);
   var input = document.getElementById('picker-input-' + activePickerId);
+  // If click is inside the picker or on the input, let it through
   if ((drop && drop.contains(e.target)) || e.target === input) return;
   closeCardPicker(activePickerId);
 });
 
 function openCardPickerMousedown(e, cardId) {
   e.preventDefault();
+  // If this picker is already open, close it (toggle)
   if (activePickerId === cardId) {
     closeCardPicker(cardId);
     return;
   }
+  // Close any other open picker first
   if (activePickerId !== null) closeCardPicker(activePickerId);
   openCardPicker(cardId);
 }
@@ -665,6 +767,7 @@ function openCardPicker(cardId) {
   input.focus();
   drop.innerHTML = buildPickerOptions(c ? c.cardKey : -1, '', c ? c.set : '').replace(/__CARDID__/g, cardId);
   drop.classList.add('open');
+  // Scroll to selected option
   setTimeout(function() {
     var sel = drop.querySelector('.highlighted');
     if (sel) sel.scrollIntoView({ block: 'nearest' });
@@ -675,6 +778,7 @@ function closeCardPicker(cardId) {
   if (activePickerId === cardId) activePickerId = null;
   var drop = document.getElementById('picker-drop-' + cardId);
   if (drop) drop.classList.remove('open');
+  // Restore input value to selected card name and make readonly again
   var c = cards.find(function(c) { return c.id === cardId; });
   var input = document.getElementById('picker-input-' + cardId);
   if (input && c) {
@@ -705,6 +809,8 @@ function pickCard(e, cardId, idx) {
   c.name     = bc.name;
   c.cardNum  = bc.num ? bc.num.split('/')[0] : '';
   c.num      = bc.num || '';
+  var pickPr = Array.isArray(bc.printings) ? bc.printings : [];
+  c.holos = pickPr.length === 1 ? [pickPr[0]] : [];
   c.serials  = bc.serials && bc.serials.length === 1 ? [bc.serials[0]] : [];
   c.variantLabels = [];
   closeCardPicker(cardId);
@@ -747,13 +853,17 @@ function selectBaseSetCard(sel, idx) {
   if (!c) return;
   var setCards2 = SET_CARD_DATA[c.set] || [];
   if (idx < 0 || idx >= setCards2.length) {
-    c.cardKey = -1; c.name = ''; c.cardNum = ''; c.variantLabels = [];
+    c.cardKey = -1; c.name = ''; c.cardNum = ''; c.holos = []; c.variantLabels = [];
   } else {
     var bc = setCards2[idx];
     c.cardKey      = idx;
     c.name         = bc.name;
     c.cardNum      = bc.num ? bc.num.split('/')[0] : '';
     c.num          = bc.num || '';
+    var sbsPr = bc.printings ? (bc.printings[sbsEdKey] || bc.printings[''] || []) : [];
+    if (!sbsPr.length) { var sfk = bc.printings ? Object.keys(bc.printings)[0] : undefined; if(sfk!==undefined) sbsPr=bc.printings[sfk]||[]; }
+    c.holos = sbsPr.length === 1 ? [sbsPr[0]] : [];
+    c.editions     = bc.editions && bc.editions.length === 1 ? [bc.editions[0]] : [];
     c.serials      = bc.serials && bc.serials.length === 1 ? [bc.serials[0]] : [];
     c.variantLabels = [];
   }
@@ -761,6 +871,33 @@ function selectBaseSetCard(sel, idx) {
   renderPreview();
 }
 
+function updateCustomNote(el, cardId, idx) {
+  var c = cards.find(function(c) { return c.id === cardId; });
+  if (!c) return;
+  if (!c.customNotes) c.customNotes = [];
+  var MAX_CN = 5;
+  // Count visible boxes before update
+  var beforeCount = Math.min(MAX_CN, c.customNotes.filter(function(n){ return n && n.trim(); }).length + 1);
+  c.customNotes[idx] = el.value;
+  // Remove trailing empty entries
+  while (c.customNotes.length > 0 && !c.customNotes[c.customNotes.length - 1].trim()) {
+    c.customNotes.pop();
+  }
+  // Count visible boxes after update
+  var afterCount = Math.min(MAX_CN, c.customNotes.filter(function(n){ return n && n.trim(); }).length + 1);
+  // Only re-render forms if the number of boxes changed (adds/removes a box)
+  if (beforeCount !== afterCount) {
+    renderForms();
+    // Restore focus to the same input after re-render
+    var newEl = document.querySelector('[data-field="customNote' + idx + '"][data-id="' + cardId + '"]');
+    if (newEl) {
+      newEl.focus();
+      var len = newEl.value.length;
+      newEl.setSelectionRange(len, len);
+    }
+  }
+  renderPreview();
+}
 
 var activeSetPickerId = null;
 
@@ -837,11 +974,16 @@ function pickSet(e, cardId, setName) {
   e.preventDefault();
   var c = cards.find(function(c) { return c.id === cardId; });
   if (!c) return;
+  var info = SET_DATA[setName];
+  var eds2 = (info && info.editions) ? info.editions : [];
   c.set           = setName;
+  c.editions      = eds2.length === 1 ? [eds2[0]] : [];
   c.cardNum       = '';
+  c.holos         = [];
   c.cardKey       = -1;
   c.name          = '';
   c.variantLabels = [];
+  c.customNotes   = [];
   closeSetPicker(cardId);
   activeSetPickerId = null;
   renderForms();
@@ -885,6 +1027,7 @@ function renderForms() {
   var hasAny = cards.some(function(c) { return c.name.trim(); });
   if (pdfBtn) pdfBtn.disabled = !hasAny;
 
+  // Pokemon filter picker
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
     pf.innerHTML = '<div class="ctrl" style="margin-bottom:8px;"><label>Pokémon</label>'
@@ -900,18 +1043,11 @@ function renderForms() {
       + '<div class="card-picker-dropdown" id="poke-picker-drop-global">'
       + buildPokemonOptions('')
       + '</div></div>'
-      + '<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">'
-      + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;padding-left:8px;">'
+      + '<label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.7rem;color:var(--muted);cursor:pointer;width:100%;padding-left:8px;">'
       + '<input type="checkbox" id="cameo-checkbox"'
       + (includeCameo ? ' checked' : '')
       + ' onchange="toggleCameo(this.checked)" style="width:auto;"/>'
       + 'Include Cameo Cards</label>'
-      + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;padding-left:8px;">'
-      + '<input type="checkbox" id="serial-checkbox"'
-      + (includeSerials ? ' checked' : '')
-      + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
-      + 'Include EX Serial Numbers</label>'
-      + '</div>'
       + '</div>';
   }
 
@@ -923,32 +1059,51 @@ function renderForms() {
     var scd      = SET_CARD_DATA[card.set];
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
     var noCard   = !!scd && !scCard;
+    var editions = scCard ? scCard.editions : ((info && info.editions) ? info.editions : []);
 
-    // Variant selector
-    var variantHTML = '';
-    var variantOptions = [];
-    var sclV = SET_CARD_DATA[card.set];
-    if (sclV && card.cardKey >= 0 && sclV[card.cardKey]) {
-      var cardVariants = sclV[card.cardKey].variants;
-      if (Array.isArray(cardVariants) && cardVariants.length >= 1) {
-        variantOptions = cardVariants;
+
+
+    var numMax  = total || 9999;
+    var numPH   = total ? ('1\u2013' + total) : (noSet ? 'set first' : '\u2014');
+    var totVal  = total ? total : '';
+    var totPH   = (card.set && !total) ? 'unnumbered' : 'auto';
+
+    // Printing (holo) selector — multi-select pills
+    var holoHTML = '';
+    var printingOptions = [];
+    var sclH = SET_CARD_DATA[card.set];
+    if (sclH && card.cardKey >= 0 && sclH[card.cardKey]) {
+      var cardPrintings = sclH[card.cardKey].printings;
+      if (Array.isArray(cardPrintings) && cardPrintings.length >= 1) {
+        printingOptions = cardPrintings;
       }
     }
-    
-    if (variantOptions.length > 0) {
-      var selVariants = card.variantLabels || [];
-      variantHTML = '<div class="ctrl"><label>Variants</label>'
+    if (!printingOptions.length && info && info.hasHolo) {
+      printingOptions = ['Regular', 'Reverse Holo'];
+    }
+    if (printingOptions.length === 1) {
+      var cardHolos1 = card.holos || [];
+      holoHTML = '<div class="ctrl"><label>Variants</label>'
         + '<div class="edition-pills">'
-        + variantOptions.map(function(v) {
-            var isSel = selVariants.indexOf(v) !== -1;
+        + '<button class="edition-pill' + (cardHolos1.indexOf(printingOptions[0]) !== -1 ? ' selected' : '') + '"'
+        + ' data-holo="' + esc(printingOptions[0]) + '"'
+        + ' onclick="toggleHolo(this, this.dataset.holo)">'
+        + esc(printingOptions[0]) + '</button>'
+        + '</div></div>';
+    } else if (printingOptions.length > 1) {
+      var cardHolos = card.holos || [];
+      holoHTML = '<div class="ctrl"><label>Variants</label>'
+        + '<div class="edition-pills">'
+        + printingOptions.map(function(p) {
+            var isSel = cardHolos.indexOf(p) !== -1;
             return '<button class="edition-pill' + (isSel ? ' selected' : '')
-              + '" data-variant="' + esc(v) + '" onclick="toggleVariant(this,this.dataset.variant)">'
-              + esc(v) + '</button>';
+              + '" data-holo="' + esc(p) + '" onclick="toggleHolo(this,this.dataset.holo)">'
+              + esc(p) + '</button>';
           }).join('')
         + '</div><div class="edition-auto-note">Select all that apply</div></div>';
     }
 
-    // EX Serial Numbers
+    // EX Serial Numbers — pills, same logic as printing
     var serialHTML = '';
     var sclSer2 = SET_CARD_DATA[card.set];
     if (sclSer2 && card.cardKey >= 0 && sclSer2[card.cardKey] && sclSer2[card.cardKey].serials && sclSer2[card.cardKey].serials.length) {
@@ -982,6 +1137,7 @@ function renderForms() {
       : '';
 
     return '<div class="card-form" id="form-' + card.id + '" data-cardid="' + card.id + '">'
+      // header
       + '<div class="card-form-header" onclick="toggleCardCollapse(' + card.id + ',event)">'
       +   '<span style="display:flex;align-items:center;gap:4px;">'
       +     '<button class="collapse-btn" tabindex="-1">&#9660;</button>'
@@ -991,6 +1147,7 @@ function renderForms() {
       +   '<button class="remove-btn" onclick="removeCard(' + card.id + ')">&#x2715;</button>'
       + '</div>'
       + '<div class="card-form-body">'
+      // set — searchable picker
       + '<div class="ctrl"><label>Set Name</label>'
       +   '<div class="set-row">'
       +     '<div class="card-picker" id="set-picker-' + card.id + '">'
@@ -1007,7 +1164,7 @@ function renderForms() {
       +     '</div>'
       +     '<img class="set-sym-thumb" src="' + imgSrc + '" style="' + (imgSrc ? '' : 'display:none;') + '" alt=""/>'
       +   '</div>'
-      + '</div>' 
+      + '</div>'      // name + number: card dropdown for Base Set, manual entry otherwise
       + (SET_CARD_DATA[card.set]
         ? '<div class="ctrl"><label>Card</label>'
           + '<div class="card-picker" id="picker-' + card.id + '">'
@@ -1023,13 +1180,40 @@ function renderForms() {
           + buildPickerOptions(card.cardKey, '', card.set)
           + '</div></div></div>'
         : '<div style="font-size:.62rem;color:var(--muted);padding:6px 2px;">Select a set to choose a card.</div>')
-      + (!noCard ? variantHTML : '')
+      // printing and serials
+      + (!noCard ? holoHTML : '')
       + (!noCard ? serialHTML : '')
+
+      // custom variants — dynamic list, new box appears when previous is filled
+      + (card.cardKey < 0 ? '' : (function() {
+          var notes = card.customNotes || [];
+          var MAX_CN = 5;
+          // Show boxes for all filled entries + 1 empty, up to MAX_CN
+          var showCount = Math.min(MAX_CN, notes.filter(function(n){ return n && n.trim(); }).length + 1);
+          var html2 = '';
+          for (var ni = 0; ni < showCount; ni++) {
+            var isFirst = ni === 0;
+            var label = isFirst
+              ? 'Custom Variant <span style="color:var(--muted2);font-size:.54rem;">(optional)</span>'
+              : 'Custom Variant ' + (ni + 1);
+            html2 += '<div class="ctrl"><label>' + label + '</label>'
+              + '<input type="text"'
+              + ' data-id="' + card.id + '"'
+              + ' data-field="customNote' + ni + '"'
+              + ' value="' + esc((notes[ni] || '')) + '"'
+              + ' placeholder="e.g. Misprint, etc."'
+              + ' oninput="updateCustomNote(this, ' + card.id + ', ' + ni + ')"/>'
+              + '</div>';
+          }
+          return html2;
+        }()))
+      // code
       + codeHTML
-      + '</div>'  
+      + '</div>'  // close card-form-body
       + '</div></div>';
   }).join('');
 
+  // Restore collapsed state
   Object.keys(collapsedIds).forEach(function(id) {
     var el = document.getElementById('form-' + id);
     if (el) el.classList.add('collapsed');
@@ -1049,7 +1233,7 @@ function scalePages() {
   if (!wraps.length) return;
   var rect = preview.getBoundingClientRect();
   var availW = rect.width - 56;
-  var availH = rect.height - 80; 
+  var availH = rect.height - 80; // subtract top bar + some padding
   if (availW <= 0) return;
   wraps.forEach(function(wrap) {
     var pageW = parseInt(wrap.getAttribute('data-page-w'), 10);
@@ -1073,6 +1257,7 @@ function scalePages() {
 }
 
 function applyLastScale() {
+  // Apply cached scale immediately after re-render, before layout settles
   if (!_lastScaledH) return;
   var wraps = document.querySelectorAll('.page-scale-wrap');
   wraps.forEach(function(wrap) {
@@ -1099,30 +1284,68 @@ function renderPreview() {
   var gapWpx   = 0;
   var gapHpx   = 0;
 
+  // Expand cards by edition × printing combinations
   var slots = [];
   for (var ci = 0; ci < cards.length; ci++) {
     var cd = cards[ci];
     var info2 = cd.set ? SET_DATA[cd.set] : null;
-    
-    // Default to a single base slot if nothing is selected
-    var selVariants = cd.variantLabels && cd.variantLabels.length ? cd.variantLabels : [null];
-    
-    // Check for serials
-    var sclSer = SET_CARD_DATA[cd.set];
-    var cardSerOpts = sclSer && cd.cardKey >= 0 && sclSer[cd.cardKey] ? (sclSer[cd.cardKey].serials || []) : [];
-    var selSerials = cardSerOpts.length > 0 && cd.serials && cd.serials.length ? cd.serials : [null];
-
-    // Generate card slots
+    // Determine printing options for this card
+    var printOpts = [];
+    var hasPrintingData = false;
+    var sclP=SET_CARD_DATA[cd.set];
+    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
+      var cdPr = sclP[cd.cardKey].printings;
+      if (Array.isArray(cdPr) && cdPr.length >= 1) { printOpts = cdPr; hasPrintingData = true; }
+    }
+    if (!hasPrintingData && info2 && info2.hasHolo) {
+      printOpts = ['Regular', 'Reverse Holo'];
+      hasPrintingData = true;
+    }
+    var selVariants = cd.variantLabels && cd.variantLabels.length ? cd.variantLabels : [];
+    var hasPrChoice  = printOpts.length > 1 && cd.holos && cd.holos.length > 0;
+    var hasPrOnly1   = !hasPrintingData;  // no variant data at all — always render
+    var hasPr1Sel    = printOpts.length === 1 && cd.holos && cd.holos.length > 0;
+    var prOk         = hasPrOnly1 || hasPr1Sel || hasPrChoice;
+    var hasCustomNotes = cd.customNotes && cd.customNotes.some(function(n) { return n && n.trim(); });
+    if (prOk) {
+      var selHolos    = printOpts.length > 1 && cd.holos && cd.holos.length ? cd.holos : [null];
+      var sclSer      = SET_CARD_DATA[cd.set];
+      var cardSerOpts  = sclSer && cd.cardKey >= 0 && sclSer[cd.cardKey] ? (sclSer[cd.cardKey].serials || []) : [];
+      var hasSerChoice = cardSerOpts.length > 1 && cd.serials && cd.serials.length > 0;
+      var hasSerOnly1  = cardSerOpts.length === 1 && cd.serials && cd.serials.length > 0;
+      var hasSerNone   = cardSerOpts.length === 0;
+      var serOk        = hasSerNone || hasSerOnly1 || hasSerChoice;
+      var selSerials   = !hasSerNone && cd.serials && cd.serials.length ? cd.serials : [null];
+      if (serOk) {
+        selHolos.forEach(function(holo) {
+          if (hasSerNone) {
+            slots.push({ card: cd, edition: null, holo: holo, serial: null, variantLabel: null, customNote: null });
+          } else {
+            selSerials.forEach(function(serial) {
+              slots.push({ card: cd, edition: null, holo: holo, serial: serial, variantLabel: null, customNote: null });
+            });
+          }
+        });
+      }
+    }
+    // One extra slot per selected variant label
     selVariants.forEach(function(v) {
-      selSerials.forEach(function(s) {
-        slots.push({ card: cd, variantLabel: v, serial: s });
-      });
+      slots.push({ card: cd, edition: null, holo: null, serial: null, variantLabel: v, customNote: null });
     });
+    // One slot per filled custom note — generated even if no variant selected
+    if (hasCustomNotes) {
+      cd.customNotes.forEach(function(note) {
+        if (note && note.trim()) {
+          slots.push({ card: cd, edition: null, holo: null, serial: null, variantLabel: null, customNote: note.trim() });
+        }
+      });
+    }
   }
-
+  // Update card count badge to reflect total preview slots
   var countBadge = document.getElementById('card-count');
   if (countBadge) countBadge.textContent = slots.length;
 
+  // If no slots, show empty page grid and return
   if (slots.length === 0) {
     var p0        = PAPER_DATA[currentPaper];
     var pageWpx0  = Math.round(p0.pageW  * DPI);
@@ -1146,6 +1369,7 @@ function renderPreview() {
     return;
   }
 
+  // Chunk slots into pages
   var chunks = [];
   for (var i = 0; i < slots.length; i += perPage) {
     var chunk = slots.slice(i, i + perPage);
@@ -1153,12 +1377,13 @@ function renderPreview() {
     chunks.push(chunk);
   }
 
-  function renderSlot(card, variantOverride, serialOverride) {
+  function renderSlot(card, editionOverride, holoOverride, variantOverride, customNoteOverride, serialOverride) {
     if (!card || !card.name || !card.name.trim()) {
       return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span><div class="empty-slot-label">empty</div></div>';
     }
     var info       = card.set ? SET_DATA[card.set] : null;
     var sym        = card.set ? getSymbolUrl(card.set) : null;
+    var total      = info ? info.total : null;
     var numDisplay = card.num ? card.num : (card.cardNum || null);
 
     return '<div class="card-slot">'
@@ -1170,4 +1395,301 @@ function renderPreview() {
       +   '<div class="cs-name">' + esc(card.name) + '</div>'
       +   (numDisplay
             ? '<div class="cs-number">' + esc(numDisplay) + '</div>'
-            :
+            : '<div class="cs-number blank">\u2014</div>')
+      +   '<div class="cs-symbol-wrap">'
+      +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
+      +   '</div>'
+      +   (card.set
+            ? '<div class="cs-set">' + esc(card.set) + '</div>'
+            : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
+
+      +   (function(){
+            if(!holoOverride) return '';
+            var sclS=SET_CARD_DATA[card.set];
+            var scdPr=sclS&&card.cardKey>=0&&sclS[card.cardKey]?sclS[card.cardKey].printings:null;
+            var prArr=Array.isArray(scdPr)?scdPr:[];
+            if(!prArr.length&&info&&info.hasHolo)prArr=['Regular','Reverse Holo'];
+            var multi=prArr.length>1;
+            return multi&&holoOverride!=='Normal'?'<div class="cs-holo">'+esc(holoOverride)+'</div>':'';
+          }())
+      +   (serialOverride     ? '<div class="cs-variant">' + esc(serialOverride)     + '</div>' : '')
+      +   (variantOverride    ? '<div class="cs-variant">' + esc(variantOverride)    + '</div>' : '')
+      +   (customNoteOverride ? '<div class="cs-variant">' + esc(customNoteOverride) + '</div>' : '')
+      +   (card.code && info && info.hasCode ? '<div class="cs-code">' + esc(card.code) + '</div>' : '')
+      + '</div>'
+      + '</div>';
+  }
+
+  container.innerHTML = chunks.map(function(chunk, pi) {
+    return '<div class="page-label">Page ' + (pi + 1) + ' of ' + chunks.length + '</div>'
+      + '<div class="page-scale-wrap" data-page-w="' + pageWpx + '" data-page-h="' + pageHpx + '">'
+      + '<div class="page-wrap" style="'
+      +   'width:'  + pageWpx  + 'px;'
+      +   'height:' + pageHpx  + 'px;'
+      +   'padding:' + marginPx + 'px;'
+      + '">'
+      +   '<div class="card-grid border-' + currentBorderType + '" style="'
+      +     'grid-template-columns:repeat(' + p.cols + ',' + CARD_W_PX + 'px);'
+      +     'grid-template-rows:repeat('    + p.rows + ',' + CARD_H_PX + 'px);'
+      +     'gap:' + gapHpx + 'px ' + gapWpx + 'px;'
+      +   '">'
+      +   chunk.map(function(slot) {
+            if (!slot) return renderSlot(null, null, null, null, null, null);
+            return renderSlot(slot.card, slot.edition, slot.holo, slot.variantLabel, slot.customNote, slot.serial);
+          }).join('')
+      +   '</div>'
+      + '</div></div>';
+  }).join('');
+
+
+  var n = slots.filter(function(s) { return s && s.card && s.card.name && s.card.name.trim(); }).length;
+  document.getElementById('pg-label').textContent =
+    n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
+  applyLastScale();
+  requestAnimationFrame(scalePages);
+}
+
+// ── UTILS ────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── SAVE PDF ─────────────────────────────────────────
+async function savePDF() {
+  var pdfBtn = document.getElementById('pdf-btn');
+  if (pdfBtn) {
+    pdfBtn.disabled = true;
+    pdfBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="8 6" transform="rotate(-90 7 7)"><animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.8s" repeatCount="indefinite"/></circle></svg> Generating\u2026';
+  }
+
+  try {
+    var p       = PAPER_DATA[currentPaper];
+    var pageWin = p.pageW;  // inches
+    var pageHin = p.pageH;  // inches
+    // Convert inches → mm for jsPDF
+    var pageWmm = pageWin * 25.4;
+    var pageHmm = pageHin * 25.4;
+
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({
+      orientation: pageWin > pageHin ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pageWmm, pageHmm],
+      compress: true
+    });
+
+    // Grab all rendered page-wrap divs (the white sheet elements)
+    var pageWraps = document.querySelectorAll('#pages-container .page-wrap');
+    if (!pageWraps.length) return;
+
+    for (var i = 0; i < pageWraps.length; i++) {
+      if (i > 0) doc.addPage([pageWmm, pageHmm],
+                              pageWin > pageHin ? 'landscape' : 'portrait');
+
+      var wrap = pageWraps[i];
+      // Temporarily strip the CSS scale so html2canvas sees the true pixel size
+      var prevTransform = wrap.style.transform;
+      wrap.style.transform = 'none';
+
+      var canvas = await html2canvas(wrap, {
+        scale: 3,               // 3× supersampling → ~288 effective DPI
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+
+      wrap.style.transform = prevTransform;
+
+      var imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // Place image to fill the entire PDF page — zero margins, no browser dialog
+      doc.addImage(imgData, 'JPEG', 0, 0, pageWmm, pageHmm);
+    }
+
+    doc.save('card-templates.pdf');
+  } catch (err) {
+    alert('PDF generation failed: ' + err.message);
+    console.error(err);
+  } finally {
+    if (pdfBtn) {
+      var hasAny = cards.some(function(c) { return c.name && c.name.trim(); });
+      pdfBtn.disabled = !hasAny;
+      pdfBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none">'
+        + '<path d="M2 2.5A1.5 1.5 0 013.5 1h5l3 3v8a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 012 11.5V2.5z" stroke="currentColor" stroke-width="1.2"/>'
+        + '<path d="M8.5 1v3h3M5 7.5h4M5 9.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>'
+        + '</svg> Save PDF';
+    }
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────
+
+function parseCSV(text) {
+  var lines = text.split('\n');
+  var headers = splitCSVRow(lines[0]);
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    var vals = splitCSVRow(lines[i]);
+    var row = {};
+    headers.forEach(function(h, j) { row[h.trim()] = (vals[j] || '').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitCSVRow(row) {
+  var result = [];
+  var inQuote = false;
+  var cur = '';
+  for (var i = 0; i < row.length; i++) {
+    var c = row[i];
+    if (c === '"') { inQuote = !inQuote; }
+    else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function buildDataFromSheets(cardRows, setRows, pokemonRows) {
+  // Build SET_DATA from sets sheet
+  SET_DATA = {};
+  setRows.forEach(function(row) {
+    var name = row['Set Name'] || row['set_name'] || row['Set'];
+    if (!name) return;
+    SET_DATA[name] = {
+      icon: (row['Icon'] || '').trim()
+    };
+  });
+
+  // Build SET_CARD_DATA and KNOWN_SETS from cards sheet
+  SET_CARD_DATA = {};
+  var setsOrder = [];
+  cardRows.forEach(function(row) {
+    var setName = row['Set'];
+    if (!setName) return;
+    if (!SET_CARD_DATA[setName]) {
+      SET_CARD_DATA[setName] = [];
+      setsOrder.push(setName);
+    }
+    SET_CARD_DATA[setName].push({
+      num:      row['Card Number'] || '',
+      name:     row['Card Name']   || '',
+      printings: row['Variant'] ? row['Variant'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
+      serials:  [],
+      primary:  row['Primary Pokemon'] || '',
+      cameo:    row['Cameo Pokemon']   || '',
+    });
+  });
+  KNOWN_SETS = setsOrder;
+
+  // Build POKEMON_LIST from Pokémon sheet, sorted by dex number
+  if (pokemonRows && pokemonRows.length) {
+    pokemonRows.sort(function(a, b) {
+      return parseInt(a['Dex Number'] || a['dex_number'] || 0, 10)
+           - parseInt(b['Dex Number'] || b['dex_number'] || 0, 10);
+    });
+    POKEMON_LIST = pokemonRows.map(function(row) {
+      return (row['Name'] || row['name'] || '').trim();
+    }).filter(Boolean);
+  } else {
+    // Fallback: derive from card data
+    var pokeSet = {};
+    cardRows.forEach(function(row) {
+      if (row['Primary Pokemon']) row['Primary Pokemon'].split(',').forEach(function(p){ var t=p.trim(); if(t) pokeSet[t]=1; });
+      if (row['Cameo Pokemon'])   row['Cameo Pokemon'].split(',').forEach(function(p){ var t=p.trim(); if(t) pokeSet[t]=1; });
+    });
+    POKEMON_LIST = Object.keys(pokeSet).sort();
+  }
+
+  BASE_SET_CARDS = SET_CARD_DATA['Base Set'] || [];
+}
+
+function showLoadingError(msg) {
+  var el = document.getElementById('loading-screen');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:40px;color:#ff7070;">'
+    + '<div style="font-size:1.2rem;margin-bottom:12px;">⚠ Failed to load data</div>'
+    + '<div style="font-size:.75rem;color:var(--muted);max-width:400px;margin:0 auto;">' + msg + '</div>'
+    + '<div style="margin-top:20px;font-size:.7rem;color:var(--muted2);">Check that your Google Sheets URLs are correct in the CONFIG section of the HTML file.</div>'
+    + '</div>';
+}
+
+function hideLoadingScreen() {
+  var el = document.getElementById('loading-screen');
+  if (el) el.style.display = 'none';
+  var app = document.querySelector('.app');
+  if (app) app.style.display = '';
+}
+
+async function loadData() {
+  // If no URLs configured, use hardcoded fallback data and just init
+  if (!CONFIG.CARDS_SHEET_URL || CONFIG.CARDS_SHEET_URL === 'YOUR_CARDS_SHEET_CSV_URL_HERE') {
+    console.warn('Google Sheets URLs not configured — using empty data.');
+    hideLoadingScreen();
+    setPaper('Letter-L');
+    renderForms();
+    renderPreview();
+    return;
+  }
+
+  try {
+    var [cardsResp, setsResp, pokemonResp] = await Promise.all([
+      fetch(CONFIG.CARDS_SHEET_URL),
+      fetch(CONFIG.SETS_SHEET_URL),
+      fetch(CONFIG.POKEMON_SHEET_URL),
+    ]);
+
+    if (!cardsResp.ok)   throw new Error('Cards sheet returned '   + cardsResp.status);
+    if (!setsResp.ok)    throw new Error('Sets sheet returned '    + setsResp.status);
+    if (!pokemonResp.ok) throw new Error('Pokémon sheet returned ' + pokemonResp.status);
+
+    var cardsText   = await cardsResp.text();
+    var setsText    = await setsResp.text();
+    var pokemonText = await pokemonResp.text();
+
+    var cardRows   = parseCSV(cardsText);
+    var setRows    = parseCSV(setsText);
+    var pokemonRows = parseCSV(pokemonText);
+
+    buildDataFromSheets(cardRows, setRows, pokemonRows);
+
+    hideLoadingScreen();
+    setPaper('Letter-L');
+    renderForms();
+    renderPreview();
+
+  } catch(err) {
+    console.error('Failed to load sheet data:', err);
+    loadFallbackData();
+  }
+}
+
+function loadFallbackData() {
+  SET_DATA = {
+    'MissingSet': {
+      img:      'data:image/png;base64,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',
+      editions: [],
+      hasHolo:  false,
+      hasCode:  false,
+    }
+  };
+  SET_CARD_DATA = {
+    'MissingSet': [
+      { num: '0/0', name: 'MissingNo.', printings: ['Normal'], serials: [], primary: 'MissingNo.', cameo: '' }
+    ]
+  };
+  KNOWN_SETS    = ['MissingSet'];
+  POKEMON_LIST  = ['MissingNo.'];
+  BASE_SET_CARDS = SET_CARD_DATA['MissingSet'];
+  hideLoadingScreen();
+  setPaper('Letter-L');
+  renderForms();
+  renderPreview();
+}
+
+loadData();
+
+</script>
+</script>
+</body>
+</html>
