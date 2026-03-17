@@ -132,10 +132,10 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   display: none;
 }
 .border-dots .corner-dot { display: block; }
-.corner-dot.tl { top: -1px; left: -1px; }
-.corner-dot.tr { top: -1px; right: -1px; }
-.corner-dot.bl { bottom: -1px; left: -1px; }
-.corner-dot.br { bottom: -1px; right: -1px; }
+.corner-dot.tl { top: 0; left: 0; transform: translate(-50%, -50%); }
+.corner-dot.tr { top: 0; right: 0; transform: translate(50%, -50%); }
+.corner-dot.bl { bottom: 0; left: 0; transform: translate(-50%, 50%); }
+.corner-dot.br { bottom: 0; right: 0; transform: translate(50%, 50%); }
 
 .card-slot.empty{
   background:white;
