@@ -359,6 +359,11 @@ var POKEMON_LIST  = [];
 var BASE_SET_CARDS = [];
 var BLANK_SYMBOL_URI = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="%23ddd"/></svg>';
 
+function getSymbolUrl(setName) {
+  var filename = setName.replace(/\s+/g, '_').replace(/[^\w_]/g, '') + '.png';
+  return 'symbols/' + filename;
+}
+
 // ── PAPER CONFIG ─────────────────────────────────────
 var PAPER_DATA = {
   'Letter-L':  { css:'letter landscape',  pageW:11.0,  pageH:8.5,   margin:0.5,  cols:3, rows:2 },
@@ -1047,7 +1052,7 @@ function renderForms() {
   container.innerHTML = cards.map(function(card, idx) {
     var info     = SET_DATA[card.set] || null;
     var total    = info ? info.total    : null;
-    var imgSrc   = info ? info.img      : '';
+    var imgSrc   = card.set ? getSymbolUrl(card.set) : '';
     var noSet    = !card.set;
     var scd      = SET_CARD_DATA[card.set];
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
@@ -1376,7 +1381,7 @@ function renderPreview() {
       return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span><div class="empty-slot-label">empty</div></div>';
     }
     var info       = card.set ? SET_DATA[card.set] : null;
-    var sym        = info ? info.img   : null;
+    var sym        = card.set ? getSymbolUrl(card.set) : null;
     var total      = info ? info.total : null;
     var numDisplay = card.num ? card.num : (card.cardNum || null);
 
@@ -1551,12 +1556,7 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
   setRows.forEach(function(row) {
     var name = row['Set Name'] || row['set_name'] || row['Set'];
     if (!name) return;
-    SET_DATA[name] = {
-      img:      row['Symbol URL'] || row['symbol_url'] || row['img'] || '',
-      editions: [],
-      hasHolo:  false,
-      hasCode:  false,
-    };
+    SET_DATA[name] = {};
   });
 
   // Build SET_CARD_DATA and KNOWN_SETS from cards sheet
