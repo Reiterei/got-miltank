@@ -1187,7 +1187,7 @@ function renderForms() {
       // custom variants — dynamic list, new box appears when previous is filled
       + (card.cardKey < 0 ? '' : (function() {
           var notes = card.customNotes || [];
-          var MAX_CN = 0;
+          var MAX_CN = 5;
           // Show boxes for all filled entries + 1 empty, up to MAX_CN
           var showCount = Math.min(MAX_CN, notes.filter(function(n){ return n && n.trim(); }).length + 1);
           var html2 = '';
