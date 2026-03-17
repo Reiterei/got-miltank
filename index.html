@@ -601,7 +601,7 @@ function handleFieldEvent(e) {
   c[field] = el.value;
   if (field === 'set') {
     var info = SET_DATA[el.value];
-    var eds2 = info ? info.editions : [];
+    var eds2 = (info && info.editions) ? info.editions : [];
     c.editions = eds2.length === 1 ? [eds2[0]] : [];
     c.cardNum      = '';
     c.holos        = [];
@@ -973,7 +973,7 @@ function pickSet(e, cardId, setName) {
   var c = cards.find(function(c) { return c.id === cardId; });
   if (!c) return;
   var info = SET_DATA[setName];
-  var eds2 = info ? info.editions : [];
+  var eds2 = (info && info.editions) ? info.editions : [];
   c.set           = setName;
   c.editions      = eds2.length === 1 ? [eds2[0]] : [];
   c.cardNum       = '';
@@ -1057,7 +1057,7 @@ function renderForms() {
     var scd      = SET_CARD_DATA[card.set];
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
     var noCard   = !!scd && !scCard;
-    var editions = scCard ? scCard.editions : (info ? info.editions : []);
+    var editions = scCard ? scCard.editions : ((info && info.editions) ? info.editions : []);
 
 
 
