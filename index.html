@@ -360,7 +360,7 @@ var BASE_SET_CARDS = [];
 var BLANK_SYMBOL_URI = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="%23ddd"/></svg>';
 
 function getSymbolUrl(setName) {
-  var filename = setName.replace(/&/g, 'and').replace(/\s+/g, '_').replace(/[^\w_]/g, '').replace(/__+/g, '_') + '.png';
+  var filename = setName.replace(/&/g, 'and').replace(/\s+/g, '_').replace(/[^\w_\u00C0-\u024F]/g, '').replace(/__+/g, '_') + '.png';
   return 'symbols/' + filename;
 }
 
