@@ -981,9 +981,8 @@ function pickSet(e, cardId, setName) {
   activeSetPickerId = null;
   renderForms();
   renderPreview();
-  // Ensure dropdown is closed after re-render
-  var drop = document.getElementById('set-picker-drop-' + cardId);
-  if (drop) drop.classList.remove('open');
+  var dropAfter = document.getElementById('set-picker-drop-' + cardId);
+  if (dropAfter) dropAfter.classList.remove('open');
 }
 
 function setPickerKeydown(e, cardId) {
