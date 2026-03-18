@@ -8,15 +8,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-/* Gill Sans is a system font — no import needed */
 :root{--bg:#0f0f12;--surface:#18181e;--surface2:#1e1e26;--border:#2a2a36;--accent:#f4bdc3;--accent-dim:rgba(244,189,195,0.09);--text:#f0f0ee;--muted:#8888a0;--muted2:#55556a;--radius:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
 header{display:flex;align-items:center;gap:14px;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
-.logo{width:41px;height:28px;background:transparent;border-radius:0;display:grid;place-items:center;flex-shrink:0;}
-header h1{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.06em;}
-header p{font-size:.6rem;color:var(--muted);margin-top:2px;}
+.logo{width:41px;height:28px;background:transparent;display:grid;place-items:center;flex-shrink:0;}
+header h1{font-size:.78rem;font-weight:700;letter-spacing:.06em;}
 
 .app{display:grid;grid-template-columns:320px 1fr;flex:1;overflow:hidden;}
 aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;height:100%;}
@@ -25,323 +23,109 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
 .ctrl{display:flex;flex-direction:column;gap:6px;}
 .ctrl label{font-size:.6rem;color:var(--muted);}
-.ctrl select,.ctrl input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;width:100%;}
-.ctrl select:focus,.ctrl input:focus{border-color:var(--accent);}
-.ctrl input::placeholder{color:var(--muted2);}
-.ctrl input:disabled{opacity:.4;cursor:not-allowed;}
-.paper-hint{font-size:.56rem;color:var(--muted2);margin-top:5px;}
-.paper-hint b{color:var(--accent);}
+.ctrl input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;width:100%;}
+.ctrl input:focus{border-color:var(--accent);}
 
 .card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;}
-.card-form.collapsed{gap:0;}
 .card-form.collapsed .card-form-body{display:none;}
-.collapse-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:0 0 0 6px;font-size:.75rem;line-height:1;transition:transform .15s;display:flex;align-items:center;}
-.collapse-btn:hover{color:var(--text);}
-.card-form.collapsed .collapse-btn{transform:rotate(-90deg);}
 .card-form-header{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
-.card-form-header b{color:var(--accent);}
-.remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.collapse-btn{background:none;border:none;color:var(--muted);cursor:pointer;}
+.remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:4px 6px;border-radius:4px;transition:all .15s;}
 .remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
 
-.num-row{display:flex;align-items:center;gap:6px;}
-.num-row input{flex:1;min-width:0;}
-.num-divider{color:var(--muted);font-size:.8rem;flex-shrink:0;}
-.num-total{flex:1;min-width:0;background:var(--surface2)!important;border-color:var(--muted2)!important;color:var(--muted)!important;cursor:default;}
-
-.set-row{display:flex;align-items:center;gap:6px;}
-.set-row select{flex:1;}
-.set-sym-thumb{width:24px;height:24px;object-fit:contain;border:1px solid var(--border);border-radius:3px;background:var(--bg);flex-shrink:0;}
 .edition-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;}
-.edition-pill{padding:4px 10px;border-radius:20px;font-size:.6rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;transition:all .15s;}
-.edition-pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.edition-pill{padding:4px 10px;border-radius:20px;font-size:.6rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;}
 .edition-pill.selected{background:var(--accent);color:#111;border-color:var(--accent);}
-.edition-pill:disabled{opacity:.5;cursor:default;}
-.edition-auto-note{font-size:.55rem;color:var(--muted2);font-style:italic;}
 
-.add-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1.5px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;cursor:pointer;transition:all .15s;width:100%;}
+.add-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1.5px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:.68rem;cursor:pointer;transition:all .15s;width:100%;margin-bottom:20px;}
 .add-card-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
-.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:7px;font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.7rem;font-weight:500;cursor:pointer;border:none;width:100%;transition:all .15s;}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:7px;font-size:.7rem;font-weight:500;cursor:pointer;border:none;width:100%;transition:all .15s;}
 .btn-primary{background:var(--accent);color:#111;}
-.btn-primary:hover{background:#b5dc35;}
-.btn-primary:disabled{opacity:.35;cursor:not-allowed;}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
-.btn-ghost:hover{border-color:var(--text);color:var(--text);}
-.btn-sm{padding:6px 12px;width:auto;font-size:.62rem;}
-.btn-danger{background:transparent;border:1px solid rgba(255,100,100,.3);color:#ff7070;}
-.btn-danger:hover{background:rgba(255,100,100,.1);}
-.count-badge{display:inline-flex;align-items:center;background:var(--accent-dim);border:1px solid rgba(244,189,195,.3);border-radius:20px;padding:2px 8px;font-size:.58rem;color:var(--accent);margin-left:8px;}
+.btn-danger:hover{background:rgba(255,100,100,.1); color:#ff7070;}
 
-#preview{padding:24px 28px;overflow-x:hidden;overflow-y:auto;background:var(--bg);height:100%;}
-.page-scale-wrap{overflow:hidden;position:relative;margin:0 auto 32px;}
-.page-scale-wrap .page-wrap{transform-origin:top left;margin:0!important;}
-.preview-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
-.preview-top h2{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.05em;}
-.preview-actions{display:flex;gap:8px;}
-.page-label{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
-.page-label::after{content:'';flex:1;height:1px;background:var(--border);}
-
-.page-wrap{background:white;margin:0;box-shadow:0 4px 40px rgba(0,0,0,.5);border-radius:2px;display:flex;align-items:center;justify-content:center;}
+#preview{padding:24px 28px;overflow-y:auto;background:var(--bg);height:100%;}
+.page-scale-wrap{margin:0 auto 32px; transform-origin: top center;}
+.page-wrap{background:white;box-shadow:0 4px 40px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;}
 .card-grid{display:grid;}
 
-/* ── CARD SLOT: 2.5" x 3.5" = 240 x 336px ───────────────────────────
-   Layout mirrors the preview image:
-   - No border between cards, only small corner cut marks
-   - Name: large bold, top area
-   - Number: bold, below name
-   - Symbol: large, centered, generous space
-   - Set name: bold, not italic
-   - Edition: small, normal weight
-   - Code: small, italic, in parens
--------------------------------------------------------------------- */
-.card-slot{
-  width:240px; height:336px;
-  background:white;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  text-align:center;
-  overflow:visible; flex-shrink:0;
-  position:relative;
-  /* No border — cut marks only */
-}
-
-/* Corner cut marks — four real elements, one per corner.
-   html2canvas does not support box-shadow on pseudo-elements
-   or CSS outline, so we use inset border + per-corner spans. */
-
-/* Default: no border, dots only (shown via .corner-dot spans) */
-.card-slot { border: 1px solid transparent; }
-
-/* Border type variants */
-.border-solid .card-slot  { border: 1px solid #999; }
-.border-dotted .card-slot { border: 1px dashed #999; }
-.border-none .card-slot   { border: 1px solid transparent; }
-
-/* Dots mode: hide the border, show corner dots */
-.border-dots .card-slot   { border: 1px solid transparent; }
-
-/* Suppress the old ::before pseudo-element entirely */
-.card-slot::before { display: none !important; }
-
-/* Corner dot spans injected by JS */
-.corner-dot {
-  position: absolute;
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  background: #000;
-  z-index: 2;
-  /* hidden by default; shown only in dots mode */
-  display: none;
-}
-.border-dots .corner-dot { display: block; }
+.card-slot{width:240px; height:336px; background:white; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; border: 1px solid transparent;}
+.border-dots .corner-dot { display: block; position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #000; z-index: 2; }
 .corner-dot.tl { top: 0; left: 0; transform: translate(-50%, -50%); }
 .corner-dot.tr { top: 0; right: 0; transform: translate(50%, -50%); }
 .corner-dot.bl { bottom: 0; left: 0; transform: translate(-50%, 50%); }
 .corner-dot.br { bottom: 0; right: 0; transform: translate(50%, 50%); }
 
-.card-slot.empty{
-  background:white;
-  display:flex; align-items:center; justify-content:center;
-}
-.card-slot.empty::after{
-  content:"BLANK";
-  font-size:1.6rem;
-  font-weight:700;
-  color:#ddd;
-  letter-spacing:.15em;
-}
-.card-slot.empty .empty-slot-label{ display:none; }
-.empty-slot-label{
-  color:#d0d0d0; font-size:.54rem; font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-}
+.cs-inner{display:flex; flex-direction:column; align-items:center; width:100%; padding:0 20px;}
+.cs-name{font-size:1.85rem; font-weight:700; color:#111; line-height:1.2; margin-bottom:5px;}
+.cs-number{font-size:1.45rem; font-weight:700; color:#111; margin-bottom:12px;}
+.cs-symbol{width:80px; height:80px; object-fit:contain; margin-bottom:10px;}
+.cs-set{font-size:1.2rem; font-weight:700; color:#111; margin-bottom:4px;}
+.cs-variant{font-size:1.1rem; color:#333; margin-bottom:2px;}
 
-/* Card content wrapper — vertically centered group */
-.cs-inner{
-  display:flex; flex-direction:column; align-items:center;
-  width:100%; padding:0 20px;
-  gap:0; overflow:hidden;
-}
-
-/* Name: large, bold, serif-adjacent feel */
-.cs-name{
-  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-  font-size:1.85rem; font-weight:700;
-  color:#111; line-height:1.2;
-  margin-bottom:5px;
-  width:100%;
-}
-
-/* Number: bold, prominent */
-.cs-number{
-  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-  font-size:1.45rem; font-weight:700;
-  color:#111;
-  margin-bottom:12px;
-}
-.cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:12px; }
-
-/* Symbol: large, centered */
-.cs-symbol-wrap{
-  width:84px; height:84px;
-  display:flex; align-items:center; justify-content:center;
-  margin-bottom:10px;
-}
-.cs-symbol{ width:80px; height:80px; object-fit:contain; }
-.cs-symbol-placeholder{
-  width:60px; height:60px;
-  border:2px dashed #ddd; border-radius:6px;
-  display:grid; place-items:center;
-  color:#ccc; font-size:.5rem;
-}
-
-/* Set name: bold, not italic */
-.cs-set{
-  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-  font-size:1.2rem; font-weight:700;
-  color:#111; line-height:1.3;
-  margin-bottom:4px;
-}
-
-/* Edition: smaller, normal weight */
-.cs-edition{
-  font-size:1.1rem; font-weight:400;
-  color:#333;
-  margin-bottom:2px;
-}
-
-/* Code: small, italic */
-.cs-holo{
-  font-size:1.1rem; font-weight:400;
-  color:#333;
-  margin-bottom:2px;
-}
-.cs-variant{
-  font-size:1.1rem; font-weight:400;
-  color:#333;
-  margin-bottom:2px;
-}
-.cs-code{
-  font-size:1.05rem; font-style:italic;
-  color:#555;
-}
-
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;text-align:center;}
-.empty-icon{width:60px;height:60px;border:1.5px dashed var(--border);border-radius:12px;display:grid;place-items:center;}
-.empty-state h3{font-size:.85rem;color:var(--muted);font-weight:400;}
-.empty-state p{font-size:.65rem;color:var(--muted);opacity:.7;}
-
-@media print {
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-  body{background:white!important;margin:0;}
-  header,aside,.preview-top,.page-label{display:none!important;}
-  .app{display:block!important;}
-  #preview{padding:0!important;background:white!important;overflow:visible!important;}
-  .page-wrap{box-shadow:none!important;border-radius:0!important;page-break-after:always;break-after:page;margin:0!important;}
-  .page-wrap:last-child{page-break-after:avoid;break-after:avoid;}
-  .card-slot{break-inside:avoid;page-break-inside:avoid;}
-  .empty-state{display:none!important;}
-}
-
-/* Searchable card picker */
 .card-picker{position:relative;}
-.card-picker-input{
-  width:100%;background:var(--bg);border:1px solid var(--border);
-  border-radius:5px;color:var(--text);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-  font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;
-  cursor:pointer;
-}
-.card-picker-input:read-only{cursor:pointer;caret-color:transparent;}
-.card-picker-input:focus{border-color:var(--accent);}
-.card-picker-input::placeholder{color:var(--muted2);}
-.card-picker-dropdown{
-  position:absolute;top:100%;left:0;right:0;z-index:999;
-  background:var(--surface2);border:1px solid var(--accent);
-  border-top:none;border-radius:0 0 5px 5px;
-  max-height:200px;overflow-y:auto;
-  display:none;
-}
+.card-picker-dropdown{position:absolute; top:100%; left:0; right:0; z-index:999; background:var(--surface2); border:1px solid var(--accent); border-top:none; max-height:200px; overflow-y:auto; display:none;}
 .card-picker-dropdown.open{display:block;}
-.card-picker-dropdown::-webkit-scrollbar{width:4px;}
-.card-picker-dropdown::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-.card-picker-option{
-  padding:6px 8px;font-size:.66rem;cursor:pointer;color:var(--text);
-  transition:background .1s;
-  font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-}
-.card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
-.card-picker-option.no-results{color:var(--muted);cursor:default;}
+.card-picker-option{padding:6px 8px; font-size:.66rem; cursor:pointer; color:var(--text);}
+.card-picker-option:hover{background:var(--accent-dim); color:var(--accent);}
+
+#loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);position:fixed;width:100%;z-index:9999;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--muted);}
 </style>
-<header>
-  <div class="logo"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;display:block;" alt="logo"/></div>
-  <div>
-    <h1>POKEMONTCGSPECIES PLACEHOLDER CARDS</h1>
+</head>
+<body>
 
-  </div>
-</header>
-
-<div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 71px);background:var(--bg);">
-  <div style="text-align:center;padding:40px;">
+<div id="loading-screen">
+  <div style="text-align:center;">
     <div style="font-size:.85rem;color:var(--muted);margin-bottom:8px;">Loading card data...</div>
-    <div style="width:200px;height:3px;background:var(--border);border-radius:2px;margin:0 auto;overflow:hidden;">
-      <div style="height:100%;background:var(--accent);animation:loadbar 1.2s ease-in-out infinite;border-radius:2px;"></div>
+    <div style="width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;background:var(--accent);width:50%;animation:loadbar 1.2s infinite ease-in-out;"></div>
     </div>
   </div>
 </div>
-<style>@keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}</style>
-<div class="app" style="display:none;">
+<style>@keyframes loadbar{0%{margin-left:-50%}100%{margin-left:100%}}</style>
+
+<header>
+  <div class="logo">🐄</div>
+  <h1>POKEMON TCG PLACEHOLDER GENERATOR</h1>
+</header>
+
+<div class="app">
   <aside>
     <div class="sidebar-inner">
       <div>
-        <div class="s-label">Paper Size</div>
+        <div class="s-label">Settings</div>
         <div class="ctrl">
-          <select id="paper-select" onchange="setPaper(this.value)">
-            <option value="Letter-L">Letter — 11 × 8.5"</option>
-            <option value="Legal-L">Legal — 14 × 8.5"</option>
-            <option value="A4-L">A4 — 11.69 × 8.27"</option>
+          <label>Paper Size</label>
+          <select id="paper-select" onchange="setPaper(this.value)" style="width:100%; background:var(--bg); color:white; border:1px solid var(--border); padding:5px;">
+            <option value="Letter-L">Letter Landscape</option>
+            <option value="Legal-L">Legal Landscape</option>
+            <option value="A4-L">A4 Landscape</option>
           </select>
         </div>
       </div>
+      
+      <div id="pokemon-filter-section"></div>
+
       <div>
-        <div class="s-label">Card Border Type</div>
-        <div class="ctrl">
-          <select id="border-select" onchange="setBorderType(this.value)">
-            <option value="dots">Corner Dots</option>
-            <option value="solid">Solid Border</option>
-            <option value="dotted">Dotted Border</option>
-            <option value="none">No Border</option>
-          </select>
-        </div>
-      </div>
-      <div>
-        <div class="s-label">Cards <span class="count-badge" id="card-count">0</span></div>
-        <div id="pokemon-filter-section"></div>
-  <div id="card-forms"></div>
-        <button class="add-card-btn" onclick="addCard()">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Add Card
-        </button>
-      </div>
-      <div style="margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
-        <button class="btn btn-ghost btn-danger" onclick="clearAll()" id="clear-btn" style="display:none;">Clear All Cards</button>
-        <button class="btn btn-primary" id="pdf-btn" disabled onclick="savePDF()">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2.5A1.5 1.5 0 013.5 1h5l3 3v8a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 012 11.5V2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8.5 1v3h3M5 7.5h4M5 9.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Save PDF
-        </button>
+        <div class="s-label">Cards <span id="card-count" style="margin-left:5px; color:var(--accent)">0</span></div>
+        <div id="card-forms"></div>
+        <button class="add-card-btn" onclick="addCard()">+ Add Card</button>
       </div>
 
-      <div style="padding:0 16px 4px;font-size:.65rem;color:var(--muted);text-align:center;line-height:1.5;">Trainer Tips: Use a R3 or R4 Round Corner Cutter to get that Pokémon Card look!</div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-ghost btn-danger" id="clear-btn" onclick="clearAll()" style="display:none;">Clear All</button>
+        <button class="btn btn-primary" onclick="savePDF()">Save PDF</button>
+      </div>
     </div>
   </aside>
 
   <div id="preview">
-    <div class="preview-top">
-      <h2>PREVIEW <span id="pg-label" style="font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.62rem;color:var(--muted);font-weight:400;margin-left:10px;"></span></h2>
-      <div class="preview-actions">
-      </div>
-    </div>
-    <div id="pages-container">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg></div><h3>No cards yet</h3><p>Add a card using the sidebar</p></div></div></div></aside></div>
+    <div id="pages-container"></div>
+  </div>
+</div>
+
 <script>
 // ── CONFIGURATION ────────────────────────────────────
 var CONFIG = {
@@ -350,38 +134,22 @@ var CONFIG = {
   POKEMON_SHEET_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDzKb6cjvjhYlbU_2-23WzMJ9t2tWOz9n0TePOtiWtX0hZ7i88HnptGvXh7eLz_ANUg_cNv5zFawQ_/pub?gid=1479465458&single=true&output=csv',
 };
 
-// ── DATA ───────
-var SET_DATA      = {};
-var SET_CARD_DATA = {};
-var KNOWN_SETS    = [];
-var POKEMON_LIST  = [];
-var BASE_SET_CARDS = [];
+// ── STATE ───────
+var SET_DATA = {}, SET_CARD_DATA = {}, KNOWN_SETS = [], POKEMON_LIST = [];
+var cards = [], cardIdCtr = 0, pokemonFilter = '', includeCameo = false, includeSerials = false;
+var currentPaper = 'Letter-L', currentBorderType = 'dots', collapsedIds = {};
+var PAPER_DATA = {
+  'Letter-L': { css:'letter landscape', pageW:11.0, pageH:8.5, margin:0.5, cols:3, rows:2 },
+  'Legal-L':  { css:'legal landscape',  pageW:14.0, pageH:8.5, margin:0.5, cols:4, rows:2 },
+  'A4-L':     { css:'A4 landscape',     pageW:11.69, pageH:8.27, margin:0.35, cols:4, rows:2 },
+};
+var CARD_W_PX = 240, CARD_H_PX = 336, DPI = 96;
 var BLANK_SYMBOL_URI = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="%23ddd"/></svg>';
 
 function getSymbolUrl(setName) {
   var info = SET_DATA[setName];
-  var icon = info && info.icon ? info.icon : 'Base_Set.png';
-  return 'symbols/' + icon;
+  return info && info.icon ? 'symbols/' + info.icon : BLANK_SYMBOL_URI;
 }
-
-// ── PAPER CONFIG ─────────────────────────────────────
-var PAPER_DATA = {
-  'Letter-L':  { css:'letter landscape',  pageW:11.0,  pageH:8.5,   margin:0.5,  cols:3, rows:2 },
-  'Legal-L':   { css:'legal landscape',   pageW:14.0,  pageH:8.5,   margin:0.5,  cols:4, rows:2 },
-  'A4-L':      { css:'A4 landscape',      pageW:11.69, pageH:8.27,  margin:0.35, cols:4, rows:2 },
-};
-
-var CARD_W_PX    = 240;
-var CARD_H_PX    = 336;
-var DPI          = 96;
-var cards        = [];
-var cardIdCtr    = 0;
-var pokemonFilter = '';
-var includeCameo = false;
-var includeSerials = false;
-var currentPaper = 'Letter-L';
-var currentBorderType = 'dots';
-var collapsedIds = {};
 
 // ── CORE LOGIC ───────────────────────────────────────
 
@@ -394,8 +162,6 @@ function addCard(data) {
     set: data.set || '',
     selectedVariants: data.selectedVariants || [],
     selectedSerials: data.selectedSerials || [],
-    code: data.code || '',
-    cardKey: typeof data.cardKey !== 'undefined' ? data.cardKey : -1,
     customNotes: data.customNotes || []
   });
   renderForms();
@@ -408,18 +174,15 @@ function duplicateCard(id) {
   var copy = JSON.parse(JSON.stringify(original));
   copy.id = ++cardIdCtr;
   cards.splice(cards.indexOf(original) + 1, 0, copy);
-  renderForms();
-  renderPreview();
+  renderForms(); renderPreview();
 }
 
 function removeCard(id) {
   cards = cards.filter(c => c.id !== id);
-  renderForms();
-  renderPreview();
+  renderForms(); renderPreview();
 }
 
-function toggleOption(btn, value, type) {
-  var id = parseInt(btn.closest('.card-form').dataset.cardid);
+function toggleOption(id, value, type) {
   var c = cards.find(c => c.id === id);
   if (!c) return;
   var target = (type === 'serial') ? 'selectedSerials' : 'selectedVariants';
@@ -427,109 +190,43 @@ function toggleOption(btn, value, type) {
   var idx = c[target].indexOf(value);
   if (idx === -1) c[target].push(value);
   else c[target].splice(idx, 1);
-  renderForms();
-  renderPreview();
+  renderForms(); renderPreview();
 }
 
 function toggleCameo(val) { includeCameo = val; renderForms(); renderPreview(); }
 function toggleSerials(val) { includeSerials = val; renderForms(); renderPreview(); }
 
 function saveToStorage() {
-  var data = { cards, cardIdCtr, pokemonFilter, includeCameo, includeSerials };
-  localStorage.setItem('gotMiltank_backup', JSON.stringify(data));
+  localStorage.setItem('gotMiltank_backup', JSON.stringify({ cards, cardIdCtr, pokemonFilter, includeCameo, includeSerials }));
 }
 
 function clearAll() {
   if (!confirm("Clear all cards?")) return;
-  cards = [];
-  localStorage.removeItem('gotMiltank_backup');
-  renderForms();
-  renderPreview();
+  cards = []; localStorage.removeItem('gotMiltank_backup');
+  renderForms(); renderPreview();
 }
 
 // ── PICKERS ──────────────────────────────────────────
-var activePickerId = null;
-var activeSetPickerId = null;
-var activePokemonPickerId = null;
+var activePicker = { type: null, id: null };
 
 document.addEventListener('mousedown', function(e) {
-  if (activePokemonPickerId) {
-    if (!document.getElementById('poke-picker-drop-global').contains(e.target)) closePokemonPicker();
-  }
-  if (activeSetPickerId) {
-    if (!document.getElementById('set-picker-drop-' + activeSetPickerId).contains(e.target)) closeSetPicker(activeSetPickerId);
-  }
-  if (activePickerId) {
-    if (!document.getElementById('picker-drop-' + activePickerId).contains(e.target)) closeCardPicker(activePickerId);
+  if (!activePicker.type) return;
+  var drop = document.querySelector('.card-picker-dropdown.open');
+  if (drop && !drop.contains(e.target) && !e.target.classList.contains('card-picker-input')) {
+    activePicker = { type: null, id: null };
+    renderForms();
   }
 });
 
-function openPokemonPickerMousedown(e) { e.preventDefault(); openPokemonPicker(); }
-function openPokemonPicker() {
-  activePokemonPickerId = 'global';
-  var input = document.getElementById('poke-picker-input-global');
-  input.removeAttribute('readonly'); input.value = ''; input.focus();
-  document.getElementById('poke-picker-drop-global').classList.add('open');
-}
-function closePokemonPicker() {
-  activePokemonPickerId = null;
-  var input = document.getElementById('poke-picker-input-global');
-  input.value = pokemonFilter || 'All'; input.setAttribute('readonly', '');
-  document.getElementById('poke-picker-drop-global').classList.remove('open');
-}
-
-function pickPokemon(e, uid, name) {
-  e.preventDefault();
-  pokemonFilter = (name === 'All') ? '' : name;
-  closePokemonPicker();
+function openPicker(type, id) {
+  activePicker = { type, id };
   renderForms();
-  renderPreview();
-}
-
-function buildPokemonOptions(filter) {
-  var f = filter.toLowerCase();
-  var opts = '<div class="card-picker-option" onmousedown="pickPokemon(event, \'global\', \'All\')">All (Show All Sets)</div>';
-  POKEMON_LIST.forEach((p, i) => {
-    var label = '#' + String(i + 1).padStart(4, '0') + ' - ' + p;
-    if (!f || label.toLowerCase().includes(f)) {
-      opts += `<div class="card-picker-option" onmousedown="pickPokemon(event, 'global', '${p.replace(/'/g, "\\'")}')">${esc(label)}</div>`;
-    }
-  });
-  return opts;
-}
-
-function openSetPickerMousedown(e, id) { e.preventDefault(); activeSetPickerId = id; document.getElementById('set-picker-drop-'+id).classList.add('open'); }
-function closeSetPicker(id) { activeSetPickerId = null; document.getElementById('set-picker-drop-'+id).classList.remove('open'); }
-function pickSet(e, id, setName) {
-  e.preventDefault();
-  var c = cards.find(c => c.id === id);
-  if (c) { 
-    c.set = setName; c.cardKey = -1; c.name = ''; c.selectedVariants = []; c.selectedSerials = []; 
-  }
-  closeSetPicker(id); renderForms(); renderPreview();
-}
-
-function openCardPickerMousedown(e, id) { e.preventDefault(); activePickerId = id; document.getElementById('picker-drop-'+id).classList.add('open'); }
-function closeCardPicker(id) { activePickerId = null; document.getElementById('picker-drop-'+id).classList.remove('open'); }
-function pickCard(e, id, idx) {
-  e.preventDefault();
-  var c = cards.find(c => c.id === id);
-  var bc = SET_CARD_DATA[c.set][idx];
-  c.cardKey = idx; c.name = bc.name; c.cardNum = bc.num.split('/')[0];
-  closeCardPicker(id); renderForms(); renderPreview();
-}
-
-function matchesPokemonFilter(card) {
-  if (!pokemonFilter) return true;
-  var f = pokemonFilter.toLowerCase();
-  if (card.primary && card.primary.toLowerCase().split(',').map(s=>s.trim()).includes(f)) return true;
-  if (includeCameo && card.cameo && card.cameo.toLowerCase().split(',').map(s=>s.trim()).includes(f)) return true;
-  return false;
-}
-
-function setsForPokemon() {
-  if (!pokemonFilter) return KNOWN_SETS;
-  return KNOWN_SETS.filter(s => SET_CARD_DATA[s] && SET_CARD_DATA[s].some(matchesPokemonFilter));
+  setTimeout(() => {
+    var input = document.getElementById(`${type}-input-${id}`);
+    if (input) { input.removeAttribute('readonly'); input.value = ''; input.focus(); }
+    var drop = document.getElementById(`${type}-drop-${id}`);
+    if (drop) drop.classList.add('open');
+  }, 10);
 }
 
 // ── UI RENDERING ─────────────────────────────────────
@@ -541,95 +238,126 @@ function renderForms() {
 
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
-    pf.innerHTML = `<div class="ctrl" style="margin-bottom:8px;"><label>Pokémon</label>
+    pf.innerHTML = `<div class="ctrl" style="margin-bottom:8px;"><label>Species Filter</label>
       <div class="card-picker">
-        <input type="text" class="card-picker-input" id="poke-picker-input-global" value="${esc(pokemonFilter || 'All')}" readonly onmousedown="openPokemonPickerMousedown(event)" oninput="document.getElementById('poke-picker-drop-global').innerHTML = buildPokemonOptions(this.value)"/>
-        <div class="card-picker-dropdown" id="poke-picker-drop-global">${buildPokemonOptions('')}</div>
+        <input type="text" class="card-picker-input" id="poke-input-global" value="${esc(pokemonFilter || 'All Pokémon')}" readonly onmousedown="openPicker('poke', 'global')" oninput="updatePokeDrop(this.value)"/>
+        <div class="card-picker-dropdown" id="poke-drop-global"></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;"><input type="checkbox" ${includeCameo ? 'checked' : ''} onchange="toggleCameo(this.checked)"/>Include Cameo Cards</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;"><input type="checkbox" ${includeSerials ? 'checked' : ''} onchange="toggleSerials(this.checked)"/>Include EX Serial Numbers</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;"><input type="checkbox" ${includeCameo ? 'checked' : ''} onchange="toggleCameo(this.checked)"/>Include Cameos</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;"><input type="checkbox" ${includeSerials ? 'checked' : ''} onchange="toggleSerials(this.checked)"/>Include EX Serials</label>
       </div></div>`;
   }
 
   container.innerHTML = cards.map((card, idx) => {
-    var scCard = (SET_CARD_DATA[card.set] && card.cardKey >= 0) ? SET_CARD_DATA[card.set][card.cardKey] : null;
+    var scd = SET_CARD_DATA[card.set] || [];
+    var scCard = card.cardKey >= 0 ? scd[card.cardKey] : null;
     var rawVariants = scCard ? scCard.variants : [];
     var rawSerials = scCard ? scCard.serials : [];
+    
     var displayOptions = (includeSerials && rawSerials.length > 0) 
       ? rawSerials.map(s => ({val: s, type: 'serial'})).concat(rawVariants.filter(v => v !== 'Normal').map(v => ({val: v, type: 'variant'})))
       : rawVariants.map(v => ({val: v, type: 'variant'}));
 
-    var variantHTML = displayOptions.length ? `<div class="ctrl"><label>Variants</label><div class="edition-pills">${displayOptions.map(opt => {
+    var variantHTML = displayOptions.length ? `<div class="edition-pills">${displayOptions.map(opt => {
         var isSel = (card.selectedVariants || []).indexOf(opt.val) !== -1 || (card.selectedSerials || []).indexOf(opt.val) !== -1;
-        return `<button class="edition-pill${isSel ? ' selected' : ''}" onclick="toggleOption(this, '${esc(opt.val)}', '${opt.type}')">${esc(opt.val)}</button>`;
-      }).join('')}</div></div>` : '';
+        return `<button class="edition-pill${isSel ? ' selected' : ''}" onclick="toggleOption(${card.id}, '${esc(opt.val)}', '${opt.type}')">${esc(opt.val)}</button>`;
+      }).join('')}</div>` : '';
 
-    return `<div class="card-form" id="form-${card.id}" data-cardid="${card.id}">
-      <div class="card-form-header" onclick="toggleCardCollapse(${card.id},event)">
-        <span style="display:flex;align-items:center;gap:4px;"><button class="collapse-btn">&#9660;</button><span style="color:var(--accent);">Card #${idx+1}</span><span style="color:var(--muted);margin-left:6px;">${esc(card.name)}</span></span>
-        <div style="display:flex;gap:4px;"><button class="remove-btn" onclick="event.stopPropagation(); duplicateCard(${card.id})">Duplicate</button><button class="remove-btn" onclick="removeCard(${card.id})">&#x2715;</button></div>
+    return `<div class="card-form" id="form-${card.id}">
+      <div class="card-form-header" onclick="toggleCollapse(${card.id})">
+        <span><span style="color:var(--accent);">#${idx+1}</span> <span style="margin-left:5px;">${esc(card.name || 'New Card')}</span></span>
+        <div>
+          <button class="remove-btn" onclick="event.stopPropagation(); duplicateCard(${card.id})">📋</button>
+          <button class="remove-btn" onclick="event.stopPropagation(); removeCard(${card.id})">✕</button>
+        </div>
       </div>
       <div class="card-form-body">
-        <div class="ctrl"><label>Set Name</label>
+        <div class="ctrl"><label>Set</label>
           <div class="card-picker">
-            <input type="text" class="card-picker-input" value="${esc(card.set)}" readonly onmousedown="openSetPickerMousedown(event, ${card.id})"/>
-            <div class="card-picker-dropdown" id="set-picker-drop-${card.id}">${setsForPokemon().map(s => `<div class="card-picker-option" onmousedown="pickSet(event, ${card.id}, '${s.replace(/'/g, "\\'")}')">${esc(s)}</div>`).join('')}</div>
+            <input type="text" id="set-input-${card.id}" class="card-picker-input" value="${esc(card.set)}" readonly onmousedown="openPicker('set', ${card.id})" oninput="updateSetDrop(${card.id}, this.value)"/>
+            <div class="card-picker-dropdown" id="set-drop-${card.id}"></div>
           </div>
         </div>
-        ${card.set ? `<div class="ctrl"><label>Card</label>
+        ${card.set ? `<div class="ctrl"><label>Card Name</label>
           <div class="card-picker">
-            <input type="text" class="card-picker-input" value="${scCard ? esc(scCard.num + ' — ' + scCard.name) : ''}" readonly onmousedown="openCardPickerMousedown(event, ${card.id})"/>
-            <div class="card-picker-dropdown" id="picker-drop-${card.id}">${(SET_CARD_DATA[card.set]||[]).map((c, i) => matchesPokemonFilter(c) ? `<div class="card-picker-option" onmousedown="pickCard(event, ${card.id}, ${i})">${esc(c.num + ' — ' + c.name)}</div>` : '').join('')}</div>
+            <input type="text" id="card-input-${card.id}" class="card-picker-input" value="${scCard ? esc(scCard.num + ' — ' + scCard.name) : ''}" readonly onmousedown="openPicker('card', ${card.id})" oninput="updateCardDrop(${card.id}, this.value)"/>
+            <div class="card-picker-dropdown" id="card-drop-${card.id}"></div>
           </div>
         </div>` : ''}
         ${variantHTML}
-        ${card.cardKey >= 0 ? `<div class="ctrl"><label>Custom Variant</label><input type="text" value="${esc(card.customNotes[0]||'')}" oninput="updateCustomNote(this, ${card.id}, 0)"/></div>` : ''}
+        ${card.cardKey >= 0 ? `<div class="ctrl" style="margin-top:5px;"><input type="text" placeholder="Custom Note (e.g. Misprint)" value="${esc(card.customNotes[0]||'')}" oninput="updateNote(${card.id}, this.value)"/></div>` : ''}
       </div></div>`;
   }).join('');
   saveToStorage();
 }
 
-function updateCustomNote(el, id, idx) {
-  var c = cards.find(c => c.id === id);
-  if (c) { c.customNotes[idx] = el.value; renderPreview(); }
+// ── DROPDOWN UPDATERS ───────────────────────────────
+
+function updatePokeDrop(f) {
+  var html = `<div class="card-picker-option" onmousedown="pickPoke('All')">All Pokémon</div>`;
+  POKEMON_LIST.filter(p => !f || p.toLowerCase().includes(f.toLowerCase())).forEach(p => {
+    html += `<div class="card-picker-option" onmousedown="pickPoke('${p.replace(/'/g, "\\'")}')">${esc(p)}</div>`;
+  });
+  document.getElementById('poke-drop-global').innerHTML = html;
+}
+function pickPoke(n) { pokemonFilter = (n==='All'?'':n); activePicker={type:null,id:null}; renderForms(); renderPreview(); }
+
+function updateSetDrop(id, f) {
+  var sets = setsForPokemon().filter(s => !f || s.toLowerCase().includes(f.toLowerCase()));
+  document.getElementById(`set-drop-${id}`).innerHTML = sets.map(s => `<div class="card-picker-option" onmousedown="pickSet(${id}, '${s.replace(/'/g, "\\'")}')">${esc(s)}</div>`).join('');
+}
+function pickSet(id, s) { var c=cards.find(c=>c.id===id); c.set=s; c.cardKey=-1; c.name=''; c.selectedVariants=[]; c.selectedSerials=[]; activePicker={type:null,id:null}; renderForms(); }
+
+function updateCardDrop(id, f) {
+  var c = cards.find(card => card.id === id);
+  var html = (SET_CARD_DATA[c.set]||[]).map((card, idx) => {
+    var label = card.num + ' — ' + card.name;
+    return ((!f || label.toLowerCase().includes(f.toLowerCase())) && matchesPokemonFilter(card)) ? `<div class="card-picker-option" onmousedown="pickCard(${id}, ${idx})">${esc(label)}</div>` : '';
+  }).join('');
+  document.getElementById(`card-drop-${id}`).innerHTML = html;
+}
+function pickCard(id, idx) { var c=cards.find(c=>c.id===id); var bc=SET_CARD_DATA[c.set][idx]; c.cardKey=idx; c.name=bc.name; c.cardNum=bc.num.split('/')[0]; activePicker={type:null,id:null}; renderForms(); renderPreview(); }
+
+function updateNote(id, v) { var c=cards.find(c=>c.id===id); c.customNotes[0]=v; renderPreview(); }
+function toggleCollapse(id) { document.getElementById('form-'+id).classList.toggle('collapsed'); }
+
+function matchesPokemonFilter(card) {
+  if (!pokemonFilter) return true;
+  var f = pokemonFilter.toLowerCase();
+  if (card.primary && card.primary.toLowerCase().split(',').some(s=>s.trim()===f)) return true;
+  if (includeCameo && card.cameo && card.cameo.toLowerCase().split(',').some(s=>s.trim()===f)) return true;
+  return false;
+}
+function setsForPokemon() {
+  if (!pokemonFilter) return KNOWN_SETS;
+  return KNOWN_SETS.filter(s => SET_CARD_DATA[s] && SET_CARD_DATA[s].some(matchesPokemonFilter));
 }
 
-function toggleCardCollapse(id, e) {
-  if (e.target.classList.contains('remove-btn')) return;
-  var form = document.getElementById('form-' + id);
-  if (form) { form.classList.toggle('collapsed'); collapsedIds[id] = form.classList.contains('collapsed'); }
-}
-
-// ── PREVIEW ──────────────────────────────────────────
+// ── PREVIEW & PDF ────────────────────────────────────
 
 function renderPreview() {
   var container = document.getElementById('pages-container');
   var p = PAPER_DATA[currentPaper];
   var perPage = p.cols * p.rows;
-  var pageWpx = Math.round(p.pageW * DPI), pageHpx = Math.round(p.pageH * DPI), marginPx = Math.round(p.margin * DPI);
-
   var slots = [];
+  
   cards.forEach(cd => {
     if (!cd.name) return;
-    var scd = SET_CARD_DATA[cd.set], cardData = (scd && cd.cardKey >= 0) ? scd[cd.cardKey] : null;
+    var cardData = SET_CARD_DATA[cd.set] ? SET_CARD_DATA[cd.set][cd.cardKey] : null;
     var hasSerials = cardData && cardData.serials.length > 0;
-    var selVars = cd.selectedVariants || [], selSers = cd.selectedSerials || [];
+    var v = cd.selectedVariants || [], s = cd.selectedSerials || [];
+    if (includeSerials && hasSerials) v = v.filter(x => x !== 'Normal');
     
-    if (includeSerials && hasSerials) selVars = selVars.filter(v => v !== 'Normal');
-
-    var selections = selVars.map(v => ({val: v, type: 'variant'})).concat(selSers.map(s => ({val: s, type: 'serial'})));
-    if (selections.length === 0) slots.push({ card: cd });
-    else selections.forEach(sel => slots.push({ card: cd, variant: sel.type==='variant'?sel.val:null, serial: sel.type==='serial'?sel.val:null }));
-    
-    (cd.customNotes || []).forEach(note => { if(note && note.trim()) slots.push({ card: cd, customNote: note.trim() }); });
+    if (v.length + s.length === 0) slots.push({ card: cd });
+    else {
+      v.forEach(val => slots.push({ card: cd, variant: val }));
+      s.forEach(val => slots.push({ card: cd, serial: val }));
+    }
+    if (cd.customNotes[0]) slots.push({ card: cd, customNote: cd.customNotes[0] });
   });
 
-  if (slots.length === 0) {
-    container.innerHTML = '<div class="empty-state"><h3>No cards yet</h3></div>';
-    document.getElementById('pg-label').textContent = '0 cards';
-    return;
-  }
+  if (!slots.length) { container.innerHTML = '<div class="empty-state">No cards added</div>'; return; }
 
   var chunks = [];
   for (var i = 0; i < slots.length; i += perPage) {
@@ -639,139 +367,26 @@ function renderPreview() {
   }
 
   container.innerHTML = chunks.map((chunk, pi) => `
-    <div class="page-label">Page ${pi + 1} of ${chunks.length}</div>
-    <div class="page-scale-wrap" data-page-w="${pageWpx}" data-page-h="${pageHpx}">
-      <div class="page-wrap" style="width:${pageWpx}px;height:${pageHpx}px;padding:${marginPx}px;">
-        <div class="card-grid border-${currentBorderType}" style="grid-template-columns:repeat(${p.cols},${CARD_W_PX}px);grid-template-rows:repeat(${p.rows},${CARD_H_PX}px);">
-          ${chunk.map(s => renderSlot(s ? s.card : null, null, null, s ? s.variant : null, s ? s.customNote : null, s ? s.serial : null)).join('')}
+    <div class="page-scale-wrap" style="width:${p.pageW*DPI}px; height:${p.pageH*DPI}px;">
+      <div class="page-wrap" style="width:${p.pageW*DPI}px; height:${p.pageH*DPI}px; padding:${p.margin*DPI}px;">
+        <div class="card-grid" style="grid-template-columns:repeat(${p.cols},${CARD_W_PX}px); grid-template-rows:repeat(${p.rows},${CARD_H_PX}px);">
+          ${chunk.map(s => renderSlot(s)).join('')}
         </div>
       </div>
     </div>`).join('');
-
-  document.getElementById('pg-label').textContent = slots.length + ' cards · ' + chunks.length + ' pages';
-  applyLastScale();
-  requestAnimationFrame(scalePages);
+  scalePages();
 }
 
-function renderSlot(card, ed, dummy, variant, note, serial) {
-  if (!card) return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
-  var sym = getSymbolUrl(card.set);
-  return `<div class="card-slot">
+function renderSlot(s) {
+  if (!s) return '<div class="card-slot border-dots"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
+  var card = s.card;
+  return `<div class="card-slot border-dots">
     <span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span>
     <div class="cs-inner">
       <div class="cs-name">${esc(card.name)}</div>
-      <div class="cs-number">${esc(card.num || card.cardNum || '—')}</div>
-      <div class="cs-symbol-wrap"><img class="cs-symbol" src="${sym}" onerror="this.src='${BLANK_SYMBOL_URI}'"/></div>
-      <div class="cs-set">${esc(card.set || '—')}</div>
-      ${variant && variant !== 'Normal' ? `<div class="cs-variant">${esc(variant)}</div>` : ''}
-      ${serial ? `<div class="cs-variant">${esc(serial)}</div>` : ''}
-      ${note ? `<div class="cs-variant">${esc(note)}</div>` : ''}
-    </div></div>`;
-}
-
-// ── UTILS & PDF ──────────────────────────────────────
-
-function setPaper(name) {
-  currentPaper = name;
-  var p = PAPER_DATA[name];
-  var el = document.getElementById('print-page-style') || document.createElement('style');
-  el.id = 'print-page-style'; document.head.appendChild(el);
-  el.textContent = `@media print { @page { size: ${p.css}; margin: ${p.margin}in; } }`;
-  renderPreview();
-}
-
-function setBorderType(t) { currentBorderType = t; renderPreview(); }
-
-function scalePages() {
-  var wraps = document.querySelectorAll('.page-scale-wrap');
-  var availW = document.getElementById('preview').offsetWidth - 60;
-  wraps.forEach(wrap => {
-    var pageW = wrap.dataset.pageW, scale = Math.min(1, availW / pageW);
-    wrap.querySelector('.page-wrap').style.transform = `scale(${scale})`;
-    wrap.style.width = (pageW * scale) + 'px';
-    wrap.style.height = (wrap.dataset.pageH * scale) + 'px';
-  });
-}
-function applyLastScale() { requestAnimationFrame(scalePages); }
-window.addEventListener('resize', scalePages);
-
-function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-
-async function savePDF() {
-  var btn = document.getElementById('pdf-btn'); btn.disabled = true; btn.innerHTML = 'Generating...';
-  try {
-    var p = PAPER_DATA[currentPaper], pageWmm = p.pageW * 25.4, pageHmm = p.pageH * 25.4;
-    var { jsPDF } = window.jspdf;
-    var doc = new jsPDF({ orientation: p.pageW > p.pageH ? 'landscape' : 'portrait', unit: 'mm', format: [pageWmm, pageHmm], compress: true });
-    var wraps = document.querySelectorAll('.page-wrap');
-    for (var i = 0; i < wraps.length; i++) {
-      if (i > 0) doc.addPage([pageWmm, pageHmm], p.pageW > p.pageH ? 'landscape' : 'portrait');
-      wraps[i].style.transform = 'none';
-      var canvas = await html2canvas(wraps[i], { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
-      doc.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageWmm, pageHmm);
-      applyLastScale();
-    }
-    doc.save('cards.pdf');
-  } catch (e) { alert(e.message); }
-  btn.disabled = false; btn.innerHTML = 'Save PDF';
-}
-
-function parseCSV(text) {
-  var rows = [], lines = text.split('\n'), headers = splitCSVRow(lines[0]);
-  for (var i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    var vals = splitCSVRow(lines[i]), row = {};
-    headers.forEach((h, j) => row[h.trim()] = (vals[j] || '').trim());
-    rows.push(row);
-  }
-  return rows;
-}
-
-function splitCSVRow(row) {
-  var res = [], inQ = false, cur = '';
-  for (var i = 0; i < row.length; i++) {
-    if (row[i] === '"') inQ = !inQ;
-    else if (row[i] === ',' && !inQ) { res.push(cur); cur = ''; }
-    else cur += row[i];
-  }
-  res.push(cur); return res;
-}
-
-function buildDataFromSheets(cardRows, setRows, pokemonRows) {
-  SET_DATA = {}; setRows.forEach(r => { var n = r['Set Name'] || r['Set']; if(n) SET_DATA[n] = { icon: r['Icon'] }; });
-  SET_CARD_DATA = {}; var setsOrder = [];
-  cardRows.forEach(r => {
-    var s = r['Set']; if(!s) return;
-    if (!SET_CARD_DATA[s]) { SET_CARD_DATA[s] = []; setsOrder.push(s); }
-    SET_CARD_DATA[s].push({
-      num: r['Card Number'] || '', name: r['Card Name'] || '',
-      variants: r['Variant'] ? r['Variant'].split(',').map(v=>v.trim()).filter(Boolean) : [],
-      serials: r['EX Serial Numbers'] ? r['EX Serial Numbers'].split(',').map(s=>s.trim()).filter(Boolean) : [],
-      primary: r['Primary Pokemon'] || '', cameo: r['Cameo Pokemon'] || ''
-    });
-  });
-  KNOWN_SETS = setsOrder;
-  POKEMON_LIST = pokemonRows.sort((a,b) => parseInt(a['Dex Number']||0) - parseInt(b['Dex Number']||0)).map(r => r['Name']).filter(Boolean);
-  BASE_SET_CARDS = SET_CARD_DATA['Base Set'] || [];
-}
-
-function hideLoadingScreen() { document.getElementById('loading-screen').style.display = 'none'; document.querySelector('.app').style.display = ''; }
-
-async function loadData() {
-  try {
-    var [cR, sR, pR] = await Promise.all([fetch(CONFIG.CARDS_SHEET_URL), fetch(CONFIG.SETS_SHEET_URL), fetch(CONFIG.POKEMON_SHEET_URL)]);
-    buildDataFromSheets(parseCSV(await cR.text()), parseCSV(await sR.text()), parseCSV(await pR.text()));
-    var saved = localStorage.getItem('gotMiltank_backup');
-    if (saved) {
-      var p = JSON.parse(saved);
-      cards = p.cards || []; cardIdCtr = p.cardIdCtr || 0; pokemonFilter = p.pokemonFilter || '';
-      includeCameo = !!p.includeCameo; includeSerials = !!p.includeSerials;
-    }
-    setPaper('Letter-L'); renderForms(); renderPreview(); hideLoadingScreen();
-  } catch (e) { console.error(e); hideLoadingScreen(); }
-}
-
-loadData();
-</script>
-</body>
-</html>
+      <div class="cs-number">${esc(card.cardNum || '—')}</div>
+      <img class="cs-symbol" src="${getSymbolUrl(card.set)}"/>
+      <div class="cs-set">${esc(card.set)}</div>
+      ${s.variant && s.variant !== 'Normal' ? `<div class="cs-variant">${esc(s.variant)}</div>` : ''}
+      ${s.serial ? `<div class="cs-variant">${esc(s.serial)}</div>` : ''}
+      ${s.customNote ? `<div class="cs-variant">${
