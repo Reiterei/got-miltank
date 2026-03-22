@@ -296,6 +296,15 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
         </div>
       </div>
       <div>
+        <div class="s-label">Print Mode</div>
+        <div class="ctrl">
+          <select id="color-select" onchange="setPrintColor(this.value)">
+            <option value="color">Color</option>
+            <option value="bw">Black &amp; White</option>
+          </select>
+        </div>
+      </div>
+      <div>
         <div class="s-label">Card Border Type</div>
         <div class="ctrl">
           <select id="border-select" onchange="setBorderType(this.value)">
@@ -362,6 +371,37 @@ function getSymbolUrl(setName) {
   return 'symbols/' + symbol;
 }
 
+// Convert a hex color to a CSS filter that tints a black image to that color.
+// Uses an approximation via sepia+saturate+hue-rotate that works well for print.
+function hexToFilter(hex) {
+  if (!hex || hex.length < 4) return '';
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var r = parseInt(hex.substring(0,2), 16) / 255;
+  var g = parseInt(hex.substring(2,4), 16) / 255;
+  var b = parseInt(hex.substring(4,6), 16) / 255;
+  // Convert RGB to HSL
+  var max = Math.max(r,g,b), min = Math.min(r,g,b);
+  var h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    var d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  h = Math.round(h * 360);
+  s = Math.round(s * 100);
+  l = Math.round(l * 100);
+  // Build filter: start from black, apply sepia+saturate+hue-rotate+brightness+lightness
+  var saturate = Math.round(s * 10);
+  var brightness = Math.round(l * 2);
+  return 'invert(1) sepia(1) saturate(' + saturate + '%) hue-rotate(' + h + 'deg) brightness(' + brightness + '%)';
+}
+
 // ── PAPER CONFIG ─────────────────────────────────────
 var PAPER_DATA = {
   'Letter-L':  { css:'letter landscape',  pageW:11.0,  pageH:8.5,   margin:0.5,  cols:3, rows:2 },
@@ -377,6 +417,7 @@ var cardIdCtr    = 0;
 var pokemonFilter = ''; // '' = All
 var includeCameo = false;
 var includeSerials = false;
+var printColor = true; // true = Color, false = Black & White
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var collapsedIds = {};
@@ -476,7 +517,9 @@ function pokemonOptionMousedown(e) {
 
 function pickPokemon(e, uid, name) {
   e.preventDefault();
-  pokemonFilter = (name === 'All') ? '' : name;
+  var newFilter = (name === 'All') ? '' : name;
+  if (newFilter === pokemonFilter) { closePokemonPicker(); return; }
+  pokemonFilter = newFilter;
   cards.forEach(function(c) {
     if (pokemonFilter && c.set) {
       var scd = SET_CARD_DATA[c.set];
@@ -485,7 +528,6 @@ function pickPokemon(e, uid, name) {
         if (!hasMatch) {
           c.set = ''; c.cardKey = -1; c.name = '';
           c.variants = [];
-          c.variantLabels = []; c.customNotes = [];
         }
       }
     }
@@ -528,6 +570,23 @@ function toggleCameo(checked) {
 
 function toggleSerials(checked) {
   includeSerials = checked;
+  if (!checked) {
+    // When unchecking: if a card had serial variants selected but not Non-Holo, auto-select Non-Holo
+    cards.forEach(function(c) {
+      if (c.cardKey < 0 || !c.set) return;
+      var sclP = SET_CARD_DATA[c.set];
+      if (!sclP || !sclP[c.cardKey]) return;
+      var cardData = sclP[c.cardKey];
+      var serials = cardData.serialVariants || [];
+      if (!serials.length) return;
+      var hasSerialSelected = serials.some(function(s) { return (c.variants || []).indexOf(s) !== -1; });
+      var hasNonHolo = (c.variants || []).indexOf('Non-Holo') !== -1;
+      var nonHoloAvailable = (cardData.variants || []).indexOf('Non-Holo') !== -1;
+      if (hasSerialSelected && !hasNonHolo && nonHoloAvailable) {
+        c.variants = (c.variants || []).concat(['Non-Holo']);
+      }
+    });
+  }
   renderForms();
   renderPreview();
 }
@@ -584,7 +643,12 @@ function setBorderType(type) {
   });
 }
 
-function setPaper(name) {
+function setPrintColor(val) {
+  printColor = (val === 'color');
+  renderPreview();
+}
+
+
   currentPaper = name;
   var p = PAPER_DATA[name];
   var perPage = p.cols * p.rows;
@@ -605,17 +669,11 @@ function handleFieldEvent(e) {
   if (!id || !field) return;
   var c = cards.find(function(c) { return c.id === id; });
   if (!c) return;
-  // customNote inputs are handled by updateCustomNote directly
-  if (field && field.indexOf('customNote') === 0) return;
   c[field] = el.value;
   if (field === 'set') {
-    c.variants        = [];
-    c.cardKey      = -1;
-    c.name         = '';
-    c.variantLabels = [];
-    c.customNotes  = [];
-    renderForms();
-  } else if (field === 'variantLabels') {
+    c.variants  = [];
+    c.cardKey   = -1;
+    c.name      = '';
     renderForms();
   }
   renderPreview();
@@ -632,8 +690,6 @@ function addCard(data) {
     variants:      data.variants         || [],
     specialVariants: data.specialVariants  || [],
     cardKey:      typeof data.cardKey !== 'undefined' ? data.cardKey : -1,
-    variantLabels: data.variantLabels || [],
-    customNotes:  data.customNotes   || []
   });
   renderForms();
   renderPreview();
@@ -645,20 +701,6 @@ function removeCard(id) {
   renderPreview();
 }
 
-function toggleVariant(btn, variant) {
-  var id = parseInt(btn.closest('.card-form').dataset.cardid);
-  var c = cards.find(function(c) { return c.id === id; });
-  if (!c) return;
-  if (!c.variantLabels) c.variantLabels = [];
-  var idx = c.variantLabels.indexOf(variant);
-  if (idx === -1) {
-    c.variantLabels.push(variant);
-  } else {
-    c.variantLabels.splice(idx, 1);
-  }
-  btn.classList.toggle('selected', c.variantLabels.indexOf(variant) !== -1);
-  renderPreview();
-}
 
 function toggleVariant(btn, variant) {
   var id = parseInt(btn.closest('.card-form').dataset.cardid);
@@ -779,6 +821,7 @@ function pickCard(e, cardId, idx) {
   e.preventDefault();
   var c = cards.find(function(c) { return c.id === cardId; });
   if (!c) return;
+  if (c.cardKey === idx) { closeCardPicker(cardId); return; }
   var sc3 = SET_CARD_DATA[c.set] || [];
   var bc = sc3[idx];
   if (!bc) return;
@@ -788,7 +831,6 @@ function pickCard(e, cardId, idx) {
   var pickVariants = Array.isArray(bc.variants) ? bc.variants : [];
   c.variants = pickVariants.length === 1 ? [pickVariants[0]] : [];
   c.specialVariants = [];
-  c.variantLabels = [];
   closeCardPicker(cardId);
   renderForms();
   renderPreview();
@@ -829,7 +871,6 @@ function selectBaseSetCard(sel, idx) {
   if (!c) return;
   var setCards2 = SET_CARD_DATA[c.set] || [];
   if (idx < 0 || idx >= setCards2.length) {
-    c.cardKey = -1; c.name = ''; c.variants = []; c.variantLabels = [];
   } else {
     var bc = setCards2[idx];
     c.cardKey      = idx;
@@ -838,37 +879,8 @@ function selectBaseSetCard(sel, idx) {
     var sbsVariants = Array.isArray(bc.variants) ? bc.variants : [];
     c.variants = sbsVariants.length === 1 ? [sbsVariants[0]] : [];
     c.specialVariants = [];
-    c.variantLabels = [];
   }
   renderForms();
-  renderPreview();
-}
-
-function updateCustomNote(el, cardId, idx) {
-  var c = cards.find(function(c) { return c.id === cardId; });
-  if (!c) return;
-  if (!c.customNotes) c.customNotes = [];
-  var MAX_CN = 5;
-  // Count visible boxes before update
-  var beforeCount = Math.min(MAX_CN, c.customNotes.filter(function(n){ return n && n.trim(); }).length + 1);
-  c.customNotes[idx] = el.value;
-  // Remove trailing empty entries
-  while (c.customNotes.length > 0 && !c.customNotes[c.customNotes.length - 1].trim()) {
-    c.customNotes.pop();
-  }
-  // Count visible boxes after update
-  var afterCount = Math.min(MAX_CN, c.customNotes.filter(function(n){ return n && n.trim(); }).length + 1);
-  // Only re-render forms if the number of boxes changed (adds/removes a box)
-  if (beforeCount !== afterCount) {
-    renderForms();
-    // Restore focus to the same input after re-render
-    var newEl = document.querySelector('[data-field="customNote' + idx + '"][data-id="' + cardId + '"]');
-    if (newEl) {
-      newEl.focus();
-      var len = newEl.value.length;
-      newEl.setSelectionRange(len, len);
-    }
-  }
   renderPreview();
 }
 
@@ -947,11 +959,12 @@ function pickSet(e, cardId, setName) {
   e.preventDefault();
   var c = cards.find(function(c) { return c.id === cardId; });
   if (!c) return;
-  c.set           = setName;
-  c.cardKey       = -1;
-  c.name          = '';
-  c.variantLabels = [];
-  c.customNotes   = [];
+  if (c.set === setName) { closeSetPicker(cardId); return; }
+  c.set     = setName;
+  c.cardKey = -1;
+  c.name    = '';
+  c.variants = [];
+  c.specialVariants = [];
   closeSetPicker(cardId);
   activeSetPickerId = null;
   renderForms();
@@ -1154,30 +1167,6 @@ function renderForms() {
       // variants
       + (!noCard ? variantHTML : '')
       + (!noCard ? specialVariantHTML : '')
-
-      // custom variants — dynamic list, new box appears when previous is filled
-      + (card.cardKey < 0 ? '' : (function() {
-          var notes = card.customNotes || [];
-          var MAX_CN = 5;
-          // Show boxes for all filled entries + 1 empty, up to MAX_CN
-          var showCount = Math.min(MAX_CN, notes.filter(function(n){ return n && n.trim(); }).length + 1);
-          var html2 = '';
-          for (var ni = 0; ni < showCount; ni++) {
-            var isFirst = ni === 0;
-            var label = isFirst
-              ? 'Custom Variant <span style="color:var(--muted2);font-size:.54rem;">(optional)</span>'
-              : 'Custom Variant ' + (ni + 1);
-            html2 += '<div class="ctrl"><label>' + label + '</label>'
-              + '<input type="text"'
-              + ' data-id="' + card.id + '"'
-              + ' data-field="customNote' + ni + '"'
-              + ' value="' + esc((notes[ni] || '')) + '"'
-              + ' placeholder="e.g. Misprint, etc."'
-              + ' oninput="updateCustomNote(this, ' + card.id + ', ' + ni + ')"/>'
-              + '</div>';
-          }
-          return html2;
-        }()))
       + '</div>'  // close card-form-body
       + '</div></div>';
   }).join('');
@@ -1273,16 +1262,17 @@ function renderPreview() {
         }
       }
     }
-    var selVariants = cd.variantLabels && cd.variantLabels.length ? cd.variantLabels : [];
     var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
     var hasPrOnly1  = !hasVariantData; // no variant data at all — always render
     var hasPr1Sel   = variantOpts.length === 1 && cd.variants && cd.variants.length > 0;
     var prOk        = hasPrOnly1 || hasPr1Sel || hasPrChoice;
-    var hasCustomNotes = cd.customNotes && cd.customNotes.some(function(n) { return n && n.trim(); });
     if (prOk) {
-      var selVariants2 = variantOpts.length > 1 && cd.variants && cd.variants.length ? cd.variants : [null];
-      selVariants2.forEach(function(variant) {
-        slots.push({ card: cd, variant: variant, specialVariant: null, variantLabel: null, customNote: null });
+      // Only generate slots for variants that are currently visible in variantOpts
+      var visibleSelected = variantOpts.length > 1 && cd.variants && cd.variants.length
+        ? cd.variants.filter(function(v) { return variantOpts.indexOf(v) !== -1; })
+        : [null];
+      visibleSelected.forEach(function(variant) {
+        slots.push({ card: cd, variant: variant, specialVariant: null });
       });
     }
     // One slot per selected special variant
@@ -1293,20 +1283,8 @@ function renderPreview() {
     }
     var selSpecialVariants = specialOpts.length > 0 && cd.specialVariants && cd.specialVariants.length ? cd.specialVariants : [];
     selSpecialVariants.forEach(function(sh) {
-      slots.push({ card: cd, variant: null, specialVariant: sh, variantLabel: null, customNote: null });
+      slots.push({ card: cd, variant: null, specialVariant: sh });
     });
-    // One extra slot per selected variant label
-    selVariants.forEach(function(v) {
-      slots.push({ card: cd, variant: null, specialVariant: null, variantLabel: v, customNote: null });
-    });
-    // One slot per filled custom note
-    if (hasCustomNotes) {
-      cd.customNotes.forEach(function(note) {
-        if (note && note.trim()) {
-          slots.push({ card: cd, variant: null, specialVariant: null, variantLabel: null, customNote: note.trim() });
-        }
-      });
-    }
   }
   // Update card count badge to reflect total preview slots
   var countBadge = document.getElementById('card-count');
@@ -1344,13 +1322,19 @@ function renderPreview() {
     chunks.push(chunk);
   }
 
-  function renderSlot(card, variantOverride, specialVariantOverride, customNoteOverride) {
+  function renderSlot(card, variantOverride, specialVariantOverride) {
     if (!card || !card.name || !card.name.trim()) {
       return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span><div class="empty-slot-label">empty</div></div>';
     }
     var info       = card.set ? SET_DATA[card.set] : null;
     var sym        = card.set ? getSymbolUrl(card.set) : null;
     var numDisplay = card.num || null;
+    // Type color — from card data
+    var sclR = SET_CARD_DATA[card.set];
+    var typeColor = printColor && sclR && card.cardKey >= 0 && sclR[card.cardKey] ? (sclR[card.cardKey].type || '') : '';
+    var tc = typeColor ? typeColor : '';
+    var textStyle = tc ? ' style="color:' + esc(tc) + ';"' : '';
+    var filterStyle = tc ? ' style="filter:' + hexToFilter(tc) + ';"' : '';
 
     return '<div class="card-slot">'
       + '<span class="corner-dot tl"></span>'
@@ -1358,19 +1342,18 @@ function renderPreview() {
       + '<span class="corner-dot bl"></span>'
       + '<span class="corner-dot br"></span>'
       + '<div class="cs-inner">'
-      +   '<div class="cs-name">' + esc(card.name) + '</div>'
+      +   '<div class="cs-name"' + textStyle + '>' + esc(card.name) + '</div>'
       +   (numDisplay
-            ? '<div class="cs-number">' + esc(numDisplay) + '</div>'
+            ? '<div class="cs-number"' + textStyle + '>' + esc(numDisplay) + '</div>'
             : '<div class="cs-number blank">\u2014</div>')
       +   '<div class="cs-symbol-wrap">'
-      +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
+      +     '<img class="cs-symbol"' + filterStyle + ' src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
       +   '</div>'
       +   (card.set
-            ? '<div class="cs-set">' + esc(card.set) + '</div>'
+            ? '<div class="cs-set"' + textStyle + '>' + esc(card.set) + '</div>'
             : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-      +   (variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-      +   (specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
-      +   (customNoteOverride     ? '<div class="cs-variant">'       + esc(customNoteOverride)      + '</div>' : '')
+      +   (variantOverride        ? '<div class="cs-variant-label"' + textStyle + '>' + esc(variantOverride)        + '</div>' : '')
+      +   (specialVariantOverride ? '<div class="cs-variant-label"' + textStyle + '>' + esc(specialVariantOverride) + '</div>' : '')
       + '</div>'
       + '</div>';
   }
@@ -1389,8 +1372,8 @@ function renderPreview() {
       +     'gap:' + gapHpx + 'px ' + gapWpx + 'px;'
       +   '">'
       +   chunk.map(function(slot) {
-            if (!slot) return renderSlot(null, null, null, null, null);
-            return renderSlot(slot.card, slot.variant, slot.specialVariant, slot.variantLabel, slot.customNote);
+            if (!slot) return renderSlot(null, null, null);
+            return renderSlot(slot.card, slot.variant, slot.specialVariant);
           }).join('')
       +   '</div>'
       + '</div></div>';
@@ -1589,6 +1572,12 @@ async function loadData() {
     return;
   }
 
+  // Safety timeout — never spin forever
+  var timeoutId = setTimeout(function() {
+    console.warn('Sheet load timed out — using fallback data.');
+    showLoadingError('Loading timed out. Check your Google Sheets URLs and make sure the sheets are published.');
+  }, 10000);
+
   try {
     var [cardsResp, setsResp, pokemonResp] = await Promise.all([
       fetch(CONFIG.CARDS_SHEET_URL),
@@ -1608,16 +1597,23 @@ async function loadData() {
     var setRows    = parseCSV(setsText);
     var pokemonRows = parseCSV(pokemonText);
 
-    buildDataFromSheets(cardRows, setRows, pokemonRows);
+    try {
+      buildDataFromSheets(cardRows, setRows, pokemonRows);
+    } catch(parseErr) {
+      console.error('Error parsing sheet data:', parseErr);
+      throw new Error('Parse error: ' + parseErr.message);
+    }
 
+    clearTimeout(timeoutId);
     hideLoadingScreen();
     setPaper('Letter-L');
     renderForms();
     renderPreview();
 
   } catch(err) {
+    clearTimeout(timeoutId);
     console.error('Failed to load sheet data:', err);
-    loadFallbackData();
+    showLoadingError('Failed to load data: ' + err.message);
   }
 }
 
@@ -1629,7 +1625,7 @@ function loadFallbackData() {
   };
   SET_CARD_DATA = {
     'MissingSet': [
-      { num: '0/0', name: 'MissingNo.', variants: ['Non-Holo', 'Reverse Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
+      { num: '0/0', name: 'MissingNo.', type: '#7c3b8f', variants: ['Non-Holo', 'Reverse Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
     ]
   };
   KNOWN_SETS    = ['MissingSet'];
