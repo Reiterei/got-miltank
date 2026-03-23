@@ -1087,11 +1087,11 @@ function renderForms() {
       + buildPokemonOptions('')
       + '</div></div>'
       + (function() {
-          if (!pokemonFilter) return '<div style="width:36px;flex-shrink:0;"></div>';
+          if (!pokemonFilter) return '<div style="width:56px;flex-shrink:0;"></div>';
           var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
           var pName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
           return '<img src="' + getSpriteUrl(pName) + '" alt="' + esc(pName) + '"'
-            + ' style="width:36px;height:36px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;"'
+            + ' style="width:56px;height:56px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;"'
             + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/icon/miltank.png\'"/>';
         }())
       + '</div>'
