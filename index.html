@@ -1536,10 +1536,10 @@ function renderPreview() {
     var hasPr1Sel   = variantOpts.length === 1 && cd.variants && cd.variants.length > 0;
     var prOk        = hasPrOnly1 || hasPr1Sel || hasPrChoice;
     if (prOk) {
-      // Only generate slots for variants that are currently visible in variantOpts
+      // Generate slots with actual variant name (not null) so renderSlot can show the label when needed
       var visibleSelected = variantOpts.length > 1 && cd.variants && cd.variants.length
         ? cd.variants.filter(function(v) { return variantOpts.indexOf(v) !== -1; })
-        : [null];
+        : variantOpts.length === 1 ? [variantOpts[0]] : [null];
       visibleSelected.forEach(function(variant) {
         slots.push({ card: cd, variant: variant, specialVariant: null });
       });
@@ -1712,7 +1712,7 @@ async function savePDF() {
       if (hasPrOnly12 || hasPr1Sel2 || hasPrChoice2) {
         var visibleSelected2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length
           ? cd2.variants.filter(function(v) { return variantOpts2.indexOf(v) !== -1; })
-          : [null];
+          : variantOpts2.length === 1 ? [variantOpts2[0]] : [null];
         visibleSelected2.forEach(function(variant) { slots2.push({ card: cd2, variant: variant, specialVariant: null }); });
       }
       var selSpecial2 = specialOpts2.length > 0 && cd2.specialVariants && cd2.specialVariants.length ? cd2.specialVariants : [];
@@ -2027,7 +2027,7 @@ function loadFallbackData() {
   };
   SET_CARD_DATA = {
     'MissingSet': [
-      { num: '0/0', name: 'MissingNo.', variants: ['Non-Holo', 'Reverse Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
+      { num: '0/0', name: 'MissingNo.', variants: ['Non-Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
     ]
   };
   KNOWN_SETS    = ['MissingSet'];
