@@ -585,7 +585,7 @@ function getSpriteUrl(pokemonName) {
     .replace(/♀/g, '-f')
     .replace(/♂/g, '-m')
     .replace(/[^a-z0-9-]/g, '');
-  return 'https://img.pokemondb.net/sprites/scarlet-violet/icon/' + slug + '.png';
+  return 'https://img.pokemondb.net/sprites/scarlet-violet/normal/' + slug + '.png';
 }
 
 function toggleSerials(checked) {
@@ -1091,8 +1091,8 @@ function renderForms() {
           var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
           var pName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
           return '<img src="' + getSpriteUrl(pName) + '" alt="' + esc(pName) + '"'
-            + ' style="width:56px;height:56px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;"'
-            + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/icon/miltank.png\'"/>';
+            + ' style="width:56px;height:56px;object-fit:contain;flex-shrink:0;"'
+            + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/normal/miltank.png\'"/>';
         }())
       + '</div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">'
