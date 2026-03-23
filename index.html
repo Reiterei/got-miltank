@@ -14,8 +14,8 @@
 body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;justify-content:center;}
 .app-container{width:100%;max-width:1536px;display:flex;flex-direction:column;flex:1;overflow:hidden;}
 
-.app{display:grid;grid-template-columns:325px 1fr;flex:1;overflow:hidden;}
-aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;height:100%;width:325px;position:relative;}
+.app{display:grid;grid-template-columns:350px 1fr;flex:1;overflow:hidden;}
+aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;height:100%;width:350px;position:relative;}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar{width:6px;height:6px;}
@@ -26,7 +26,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .settings-btn{position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);padding:4px 7px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s,border-color .15s;font-size:1.1rem;line-height:1;}
 .settings-btn:hover{color:var(--text);background:var(--surface2);border-color:var(--text);}
 .sidebar-inner{padding:12px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1;align-items:center;}
-.sidebar-inner > *{width:100%;max-width:325px;}
+.sidebar-inner > *{width:100%;max-width:350px;}
 .sidebar-inner label, .sidebar-inner .ctrl label, .s-label, .edition-pills{text-align:center;justify-content:center;}
 
 /* Settings panel */
@@ -58,7 +58,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
 .set-row{display:flex;align-items:center;gap:6px;width:100%;position:relative;}
 .set-row .card-picker{flex:1;min-width:0;}
-.set-sym-thumb{width:24px;height:24px;object-fit:contain;border:1px solid var(--border);border-radius:3px;background:var(--bg);flex-shrink:0;position:absolute;right:6px;pointer-events:none;}
+.set-sym-thumb{width:24px;height:24px;object-fit:contain;border-radius:3px;background:var(--bg);flex-shrink:0;position:absolute;right:6px;pointer-events:none;}
 .edition-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;}
 .edition-pill{padding:4px 10px;border-radius:20px;font-size:.6rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;transition:all .15s;}
 .edition-pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
@@ -237,8 +237,8 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 @media (max-width: 600px) {
   .app{grid-template-columns:1fr;}
   #preview{display:none;}
-  aside{height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;width:100%;border-right:none;}
-  .sidebar-header{width:100%;max-width:325px;}
+  aside{height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;width:100%;border-right:none;zoom:1.15;}
+  .sidebar-header{width:100%;max-width:350px;}
 }
 
 /* Searchable card picker */
@@ -308,7 +308,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   <aside>
     <!-- Logo + Title + Gear -->
     <div class="sidebar-header" style="position:relative;display:flex;align-items:center;justify-content:center;padding:16px 50px 10px;flex-shrink:0;">
-      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;" alt="logo"/>
+      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;image-rendering:pixelated;" alt="logo"/>
       <div style="text-align:center;">
         <div style="font-size:.95rem;font-weight:700;letter-spacing:.06em;">POKÉMON TCG SPECIES</div>
         <div style="font-size:.7rem;font-weight:400;color:var(--muted);letter-spacing:.04em;">Placeholder Cards</div>
@@ -329,15 +329,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
             <option value="Letter-L">Letter — 11 × 8.5"</option>
             <option value="Legal-L">Legal — 14 × 8.5"</option>
             <option value="A4-L">A4 — 11.69 × 8.27"</option>
-          </select>
-        </div>
-      </div>
-      <div>
-        <div class="s-label">Print Mode</div>
-        <div class="ctrl">
-          <select id="color-select" onchange="setPrintColor(this.value)">
-            <option value="color">Color</option>
-            <option value="bw" selected>Black &amp; White</option>
           </select>
         </div>
       </div>
@@ -425,7 +416,6 @@ var cardIdCtr    = 0;
 var pokemonFilter = ''; // '' = All
 var includeCameo = false;
 var includeSerials = false;
-var printColor = false; // true = Color, false = Black & White
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var collapsedIds = {};
@@ -666,11 +656,6 @@ function setBorderType(type) {
   });
 }
 
-function setPrintColor(val) {
-  printColor = (val === 'color');
-  renderPreview();
-}
-
 function toggleSettings() {
   var panel = document.getElementById('settings-panel');
   if (panel) panel.classList.toggle('open');
@@ -802,7 +787,6 @@ function saveState() {
       pokemonFilter:     pokemonFilter,
       includeCameo:      includeCameo,
       includeSerials:    includeSerials,
-      printColor:        printColor,
       currentPaper:      currentPaper,
       currentBorderType: currentBorderType,
       cardIdCtr:         cardIdCtr,
@@ -820,16 +804,13 @@ function restoreState() {
     pokemonFilter     = state.pokemonFilter     || '';
     includeCameo      = !!state.includeCameo;
     includeSerials    = !!state.includeSerials;
-    printColor        = !!state.printColor;
     currentPaper      = state.currentPaper      || 'Letter-L';
     currentBorderType = state.currentBorderType || 'dots';
     cardIdCtr         = state.cardIdCtr         || cards.length;
     // Sync UI controls
     var paperSel  = document.getElementById('paper-select');
-    var colorSel  = document.getElementById('color-select');
     var borderSel = document.getElementById('border-select');
     if (paperSel)  paperSel.value  = currentPaper;
-    if (colorSel)  colorSel.value  = printColor ? 'color' : 'bw';
     if (borderSel) borderSel.value = currentBorderType;
     return true;
   } catch(e) { return false; }
@@ -1399,7 +1380,6 @@ function renderPreview() {
       + 'gap:' + gapHpx + 'px ' + gapWpx + 'px;">'
       + emptySlots + '</div></div></div>';
     document.getElementById('pg-label').textContent = '0 cards · 0 pages';
-    tintSymbolCanvases();
     applyLastScale();
     requestAnimationFrame(scalePages);
     return;
@@ -1420,19 +1400,6 @@ function renderPreview() {
     var info       = card.set ? SET_DATA[card.set] : null;
     var sym        = card.set ? getSymbolUrl(card.set) : null;
     var numDisplay = card.num || null;
-    // Type color — from card data
-    var sclR = SET_CARD_DATA[card.set];
-    var typeColor = printColor && sclR && card.cardKey >= 0 && sclR[card.cardKey] ? (sclR[card.cardKey].type || '') : '';
-    var tc = typeColor ? typeColor : '';
-    var textStyle = tc ? ' style="color:' + esc(tc) + ';"' : '';
-
-    // For tinted symbols use a canvas; for plain symbols use an img
-    var symbolEl;
-    if (tc && sym) {
-      symbolEl = '<canvas class="cs-symbol" data-src="' + esc(sym) + '" data-color="' + esc(tc) + '" width="80" height="80"></canvas>';
-    } else {
-      symbolEl = '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>';
-    }
 
     return '<div class="card-slot">'
       + '<span class="corner-dot tl"></span>'
@@ -1440,18 +1407,18 @@ function renderPreview() {
       + '<span class="corner-dot bl"></span>'
       + '<span class="corner-dot br"></span>'
       + '<div class="cs-inner">'
-      +   '<div class="cs-name"' + textStyle + '>' + esc(card.name) + '</div>'
+      +   '<div class="cs-name">' + esc(card.name) + '</div>'
       +   (numDisplay
-            ? '<div class="cs-number"' + textStyle + '>' + esc(numDisplay) + '</div>'
+            ? '<div class="cs-number">' + esc(numDisplay) + '</div>'
             : '<div class="cs-number blank">\u2014</div>')
       +   '<div class="cs-symbol-wrap">'
-      +     symbolEl
+      +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
       +   '</div>'
       +   (card.set
-            ? '<div class="cs-set"' + textStyle + '>' + esc(card.set) + '</div>'
+            ? '<div class="cs-set">' + esc(card.set) + '</div>'
             : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-      +   (variantOverride        ? '<div class="cs-variant-label"' + textStyle + '>' + esc(variantOverride)        + '</div>' : '')
-      +   (specialVariantOverride ? '<div class="cs-variant-label"' + textStyle + '>' + esc(specialVariantOverride) + '</div>' : '')
+      +   (variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+      +   (specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
       + '</div>'
       + '</div>';
   }
@@ -1481,7 +1448,6 @@ function renderPreview() {
   var n = slots.filter(function(s) { return s && s.card && s.card.name && s.card.name.trim(); }).length;
   document.getElementById('pg-label').textContent =
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
-  tintSymbolCanvases();
   applyLastScale();
   requestAnimationFrame(scalePages);
   saveState();
@@ -1490,45 +1456,6 @@ function renderPreview() {
 // ── UTILS ────────────────────────────────────────────
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// Finds all tint canvases in the preview and draws their symbol image tinted to the target color.
-// Uses pixel manipulation: dark pixels are replaced with the type color, light pixels stay white.
-function tintSymbolCanvases() {
-  var canvases = document.querySelectorAll('canvas.cs-symbol[data-src]');
-  canvases.forEach(function(canvas) {
-    var src   = canvas.getAttribute('data-src');
-    var color = canvas.getAttribute('data-color');
-    var ctx   = canvas.getContext('2d');
-    // Parse the hex color into RGB
-    var hex = color.replace('#','');
-    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
-    var tr = parseInt(hex.slice(0,2),16);
-    var tg = parseInt(hex.slice(2,4),16);
-    var tb = parseInt(hex.slice(4,6),16);
-    var img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function() {
-      var w = canvas.width, h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
-      var imageData = ctx.getImageData(0, 0, w, h);
-      var data = imageData.data;
-      for (var i = 0; i < data.length; i += 4) {
-        var r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-        if (a < 10) continue; // skip fully transparent
-        // Brightness: 0 = black, 255 = white
-        var brightness = (r + g + b) / 3;
-        // Blend: dark pixels → type color, light pixels → white
-        var t = brightness / 255; // 0 at black, 1 at white
-        data[i]   = Math.round(tr + (255 - tr) * t);
-        data[i+1] = Math.round(tg + (255 - tg) * t);
-        data[i+2] = Math.round(tb + (255 - tb) * t);
-      }
-      ctx.putImageData(imageData, 0, 0);
-    };
-    img.src = src;
-  });
 }
 
 // ── SAVE PDF ─────────────────────────────────────────
@@ -1545,7 +1472,10 @@ async function savePDF() {
   if (previewWasHidden) {
     preview.style.display = 'block';
     preview.style.visibility = 'hidden'; // show in layout but invisible to user
-    scalePages(); // recalculate page scale now that preview has dimensions
+    // Wait two frames for the browser to reflow and paint before capturing
+    await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });
+    scalePages();
+    await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });
   }
 
   try {
@@ -1573,9 +1503,18 @@ async function savePDF() {
                               pageWin > pageHin ? 'landscape' : 'portrait');
 
       var wrap = pageWraps[i];
-      // Temporarily strip the CSS scale so html2canvas sees the true pixel size
+      var scaleWrap = wrap.parentElement; // .page-scale-wrap
+      // Temporarily remove clipping and scale so html2canvas sees the full native size
       var prevTransform = wrap.style.transform;
+      var prevWrapW = scaleWrap ? scaleWrap.style.width : null;
+      var prevWrapH = scaleWrap ? scaleWrap.style.height : null;
+      var prevOverflow = scaleWrap ? scaleWrap.style.overflow : null;
       wrap.style.transform = 'none';
+      if (scaleWrap) {
+        scaleWrap.style.width = wrap.style.width;
+        scaleWrap.style.height = wrap.style.height;
+        scaleWrap.style.overflow = 'visible';
+      }
 
       var canvas = await html2canvas(wrap, {
         scale: 3,               // 3× supersampling → ~288 effective DPI
@@ -1585,6 +1524,11 @@ async function savePDF() {
       });
 
       wrap.style.transform = prevTransform;
+      if (scaleWrap) {
+        scaleWrap.style.width    = prevWrapW;
+        scaleWrap.style.height   = prevWrapH;
+        scaleWrap.style.overflow = prevOverflow;
+      }
 
       var imgData = canvas.toDataURL('image/jpeg', 0.95);
       // Place image to fill the entire PDF page — zero margins, no browser dialog
@@ -1665,7 +1609,6 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
     SET_CARD_DATA[setName].push({
       num:      row['Card Number'] || '',
       name:     row['Card Name']   || '',
-      type:     row['Type']        || '',
       variants: row['Standard Variants'] ? row['Standard Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
       specialVariants: row['Special Variants'] ? row['Special Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
       serialVariants: row['Serial Number Variants'] ? row['Serial Number Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
@@ -1782,7 +1725,7 @@ function loadFallbackData() {
   };
   SET_CARD_DATA = {
     'MissingSet': [
-      { num: '0/0', name: 'MissingNo.', type: '#7c3b8f', variants: ['Non-Holo', 'Reverse Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
+      { num: '0/0', name: 'MissingNo.', variants: ['Non-Holo', 'Reverse Holo'], specialVariants: ['Cosmos Holo'], serialVariants: ['000-000-001', '000-000-002'], primary: '#0001', cameo: '' }
     ]
   };
   KNOWN_SETS    = ['MissingSet'];
