@@ -1069,7 +1069,8 @@ function renderForms() {
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
     pf.innerHTML = '<div style="margin-bottom:8px;">'
-      + '<div class="card-picker" id="poke-picker-wrap">'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<div class="card-picker" id="poke-picker-wrap" style="flex:1;">'
       + '<input type="text" class="card-picker-input"'
       + ' id="poke-picker-input-global"'
       + ' placeholder="Pokémon Species"'
@@ -1085,6 +1086,15 @@ function renderForms() {
       + '<div class="card-picker-dropdown" id="poke-picker-drop-global">'
       + buildPokemonOptions('')
       + '</div></div>'
+      + (function() {
+          if (!pokemonFilter) return '<div style="width:36px;flex-shrink:0;"></div>';
+          var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
+          var pName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
+          return '<img src="' + getSpriteUrl(pName) + '" alt="' + esc(pName) + '"'
+            + ' style="width:36px;height:36px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;"'
+            + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/icon/miltank.png\'"/>';
+        }())
+      + '</div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">'
       + '<div>'
       + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;padding-left:8px;">'
@@ -1098,15 +1108,6 @@ function renderForms() {
       + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
       + 'Include EX Serial Numbers</label>'
       + '</div>'
-      + (function() {
-          if (!pokemonFilter) return '<div></div>';
-          var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-          var pName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
-          if (!pName) return '<div></div>';
-          return '<img src="' + getSpriteUrl(pName) + '" alt="' + esc(pName) + '"'
-            + ' style="width:64px;height:64px;object-fit:contain;image-rendering:pixelated;"'
-            + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/icon/ditto.png\'"/>';
-        }())
       + '</div>'
       + '</div>';
   }
