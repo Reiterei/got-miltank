@@ -287,11 +287,23 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 <!-- Pokemon change confirmation modal -->
 <div class="modal-overlay" id="pokemon-confirm-modal" onclick="if(event.target===this)closePokemonConfirmModal();">
   <div class="modal-box">
-    <div class="modal-title">⚠ Change Pokémon Species?</div>
-    <div class="modal-body">Changing the Pokémon species will clear all current cards. This cannot be undone.</div>
+    <div class="modal-title">&#9888; Change Pok&eacute;mon Species?</div>
+    <div class="modal-body">Changing the Pok&eacute;mon species will clear all current cards. This cannot be undone.</div>
     <div class="modal-actions">
       <button class="modal-btn" onclick="closePokemonConfirmModal()">Cancel</button>
       <button class="modal-btn modal-btn-confirm" onclick="confirmPokemonChange()">Yes, Reset Cards</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fill all cards confirmation modal -->
+<div class="modal-overlay" id="fill-confirm-modal" onclick="if(event.target===this)closeFillConfirmModal();">
+  <div class="modal-box">
+    <div class="modal-title">&#9888; Fill All Cards?</div>
+    <div class="modal-body">This will clear all current cards and add every card for this Pok&eacute;mon based on your current settings. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeFillConfirmModal()">Cancel</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmFillAll()">Yes, Fill Cards</button>
     </div>
   </div>
 </div>
@@ -522,7 +534,9 @@ function confirmPokemonChange() {
   var pending = _pendingPokemonChange;
   _pendingPokemonChange = null;
   document.getElementById('pokemon-confirm-modal').classList.remove('open');
-  if (pending !== null) {
+  if (pending === '__FILL__') {
+    fillAllCards();
+  } else if (pending !== null) {
     cards = [];
     applyPokemonChange(pending);
   }
@@ -807,6 +821,60 @@ function clearAll() {
   renderPreview();
 }
 
+function confirmFillAllCards() {
+  if (!pokemonFilter) return;
+  // If cards exist, show the dedicated fill-all confirmation modal
+  if (cards.length > 0) {
+    document.getElementById('fill-confirm-modal').classList.add('open');
+    return;
+  }
+  // No existing cards — go straight to fill
+  fillAllCards();
+}
+
+function closeFillConfirmModal() {
+  document.getElementById('fill-confirm-modal').classList.remove('open');
+}
+
+function confirmFillAll() {
+  closeFillConfirmModal();
+  fillAllCards();
+}
+
+function fillAllCards() {
+  if (!pokemonFilter) return;
+  // Wipe existing cards and replace with every matching card for the selected Pokémon
+  cards = [];
+  cardIdCtr = 0;
+  var sets = setsForPokemon();
+  sets.forEach(function(setName) {
+    var allCards = SET_CARD_DATA[setName] || [];
+    var matching = cardsForPokemon(setName);
+    matching.forEach(function(bc) {
+      var idx = allCards.indexOf(bc);
+      var variants = Array.isArray(bc.variants) ? bc.variants.slice() : [];
+      var serialVariants = Array.isArray(bc.serialVariants) ? bc.serialVariants : [];
+      // Mirror the serial substitution logic from renderForms/renderPreview:
+      // when includeSerials is on and this card has serials, drop Non-Holo and prepend serials
+      if (includeSerials && serialVariants.length > 0) {
+        variants = variants.filter(function(v) { return v !== 'Non-Holo'; });
+        variants = serialVariants.concat(variants);
+      }
+      var specialVariants = Array.isArray(bc.specialVariants) ? bc.specialVariants.slice() : [];
+      cards.push({
+        id:              ++cardIdCtr,
+        name:            bc.name,
+        num:             bc.num || '',
+        set:             setName,
+        cardKey:         idx,
+        variants:        variants,
+        specialVariants: specialVariants,
+      });
+    });
+  });
+  renderForms();
+  renderPreview();
+}
 function saveState() {
   try {
     var state = {
@@ -1140,6 +1208,12 @@ function renderForms() {
       + (includeSerials ? ' checked' : '')
       + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
       + 'Include EX Serial Numbers</label>'
+      + (pokemonFilter
+        ? '<button class="btn btn-ghost" style="margin-top:10px;font-size:.65rem;gap:5px;" onclick="confirmFillAllCards()">'
+          + '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          + 'Fill All Cards for This Pokémon'
+          + '</button>'
+        : '')
       + '</div>';
   }
 
