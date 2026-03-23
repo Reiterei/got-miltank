@@ -1475,7 +1475,8 @@ function renderPreview() {
     var typeColor = printColor && sclR && card.cardKey >= 0 && sclR[card.cardKey] ? (sclR[card.cardKey].type || '') : '';
     var tc = typeColor ? typeColor : '';
     var textStyle = tc ? ' style="color:' + esc(tc) + ';"' : '';
-    var filterStyle = tc ? ' style="filter:' + hexToFilter(tc) + ';"' : '';
+    var symbolWrapStyle = tc ? ' style="background:' + esc(tc) + ';border-radius:50%;"' : '';
+    var symbolImgStyle = tc ? ' style="mix-blend-mode:lighten;"' : '';
 
     return '<div class="card-slot">'
       + '<span class="corner-dot tl"></span>'
@@ -1487,8 +1488,8 @@ function renderPreview() {
       +   (numDisplay
             ? '<div class="cs-number"' + textStyle + '>' + esc(numDisplay) + '</div>'
             : '<div class="cs-number blank">\u2014</div>')
-      +   '<div class="cs-symbol-wrap">'
-      +     '<img class="cs-symbol"' + filterStyle + ' src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
+      +   '<div class="cs-symbol-wrap"' + symbolWrapStyle + '>'
+      +     '<img class="cs-symbol"' + symbolImgStyle + ' src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
       +   '</div>'
       +   (card.set
             ? '<div class="cs-set"' + textStyle + '>' + esc(card.set) + '</div>'
