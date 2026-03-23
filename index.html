@@ -296,6 +296,18 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   </div>
 </div>
 
+<!-- Clear all confirmation modal -->
+<div class="modal-overlay" id="clear-confirm-modal" onclick="if(event.target===this)closeClearConfirmModal();">
+  <div class="modal-box">
+    <div class="modal-title">&#9888; Clear All Cards?</div>
+    <div class="modal-body">This will remove all current cards. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeClearConfirmModal()">Cancel</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmClearAll()">Yes, Clear All</button>
+    </div>
+  </div>
+</div>
+
 <!-- Fill all cards confirmation modal -->
 <div class="modal-overlay" id="fill-confirm-modal" onclick="if(event.target===this)closeFillConfirmModal();">
   <div class="modal-box">
@@ -368,7 +380,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
           Add Card
         </button>
       <div style="margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:8px;">
-        <button class="btn btn-ghost btn-danger" onclick="clearAll()" id="clear-btn" style="display:none;">Clear All Cards</button>
+        <button class="btn btn-ghost btn-danger" onclick="showClearConfirmModal()" id="clear-btn" style="display:none;">Clear All Cards</button>
         <button class="btn btn-primary" id="pdf-btn" disabled onclick="savePDF()">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 2.5A1.5 1.5 0 013.5 1h5l3 3v8a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 012 11.5V2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8.5 1v3h3M5 7.5h4M5 9.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Save PDF
@@ -850,6 +862,19 @@ function updateVariantWarning(cardId, c) {
   }
 }
 
+
+function showClearConfirmModal() {
+  document.getElementById('clear-confirm-modal').classList.add('open');
+}
+
+function closeClearConfirmModal() {
+  document.getElementById('clear-confirm-modal').classList.remove('open');
+}
+
+function confirmClearAll() {
+  closeClearConfirmModal();
+  clearAll();
+}
 
 function clearAll() {
   cards = [];
@@ -1497,8 +1522,17 @@ function renderPreview() {
         }
       }
     }
+    // Compute special variants first so we can use them in the prOk guard
+    var specialOpts = [];
+    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
+      var cdSpecialData = sclP[cd.cardKey].specialVariants;
+      if (Array.isArray(cdSpecialData) && cdSpecialData.length >= 1) specialOpts = cdSpecialData;
+    }
+
     var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
-    var hasPrOnly1  = !hasVariantData; // no variant data at all — always render
+    // Only render a blank standard slot if there's no variant data AND no special variants —
+    // cards with only special variants should not get an extra blank standard slot.
+    var hasPrOnly1  = !hasVariantData && specialOpts.length === 0;
     var hasPr1Sel   = variantOpts.length === 1 && cd.variants && cd.variants.length > 0;
     var prOk        = hasPrOnly1 || hasPr1Sel || hasPrChoice;
     if (prOk) {
@@ -1509,12 +1543,6 @@ function renderPreview() {
       visibleSelected.forEach(function(variant) {
         slots.push({ card: cd, variant: variant, specialVariant: null });
       });
-    }
-    // One slot per selected special variant
-    var specialOpts = [];
-    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
-      var cdSpecialData = sclP[cd.cardKey].specialVariants;
-      if (Array.isArray(cdSpecialData) && cdSpecialData.length >= 1) specialOpts = cdSpecialData;
     }
     var selSpecialVariants = specialOpts.length > 0 && cd.specialVariants && cd.specialVariants.length ? cd.specialVariants : [];
     selSpecialVariants.forEach(function(sh) {
@@ -1558,6 +1586,22 @@ function renderPreview() {
     var sym        = card.set ? getSymbolUrl(card.set) : null;
     var numDisplay = card.num || null;
 
+    // Count total variants across all types to decide whether to show the label.
+    // If there is only 1 variant in total, the label adds no useful info — suppress it.
+    var totalVariantCount = 0;
+    var sclR = SET_CARD_DATA[card.set];
+    if (sclR && card.cardKey >= 0 && sclR[card.cardKey]) {
+      var cdR = sclR[card.cardKey];
+      var stdVars = Array.isArray(cdR.variants) ? cdR.variants.slice() : [];
+      if (includeSerials && Array.isArray(cdR.serialVariants) && cdR.serialVariants.length > 0) {
+        stdVars = stdVars.filter(function(v) { return v !== 'Non-Holo'; });
+        stdVars = cdR.serialVariants.concat(stdVars);
+      }
+      var specVars = Array.isArray(cdR.specialVariants) ? cdR.specialVariants : [];
+      totalVariantCount = stdVars.length + specVars.length;
+    }
+    var showLabel = totalVariantCount > 1;
+
     return '<div class="card-slot">'
       + '<span class="corner-dot tl"></span>'
       + '<span class="corner-dot tr"></span>'
@@ -1574,8 +1618,8 @@ function renderPreview() {
       +   (card.set
             ? '<div class="cs-set">' + esc(card.set) + '</div>'
             : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-      +   (variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-      +   (specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+      +   (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+      +   (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
       + '</div>'
       + '</div>';
   }
@@ -1657,19 +1701,19 @@ async function savePDF() {
           }
         }
       }
+      var specialOpts2 = [];
+      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
+        var cdSpecialData2 = sclP2[cd2.cardKey].specialVariants;
+        if (Array.isArray(cdSpecialData2) && cdSpecialData2.length >= 1) specialOpts2 = cdSpecialData2;
+      }
       var hasPrChoice2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length > 0;
-      var hasPrOnly12  = !hasVariantData2;
+      var hasPrOnly12  = !hasVariantData2 && specialOpts2.length === 0;
       var hasPr1Sel2   = variantOpts2.length === 1 && cd2.variants && cd2.variants.length > 0;
       if (hasPrOnly12 || hasPr1Sel2 || hasPrChoice2) {
         var visibleSelected2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length
           ? cd2.variants.filter(function(v) { return variantOpts2.indexOf(v) !== -1; })
           : [null];
         visibleSelected2.forEach(function(variant) { slots2.push({ card: cd2, variant: variant, specialVariant: null }); });
-      }
-      var specialOpts2 = [];
-      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
-        var cdSpecialData2 = sclP2[cd2.cardKey].specialVariants;
-        if (Array.isArray(cdSpecialData2) && cdSpecialData2.length >= 1) specialOpts2 = cdSpecialData2;
       }
       var selSpecial2 = specialOpts2.length > 0 && cd2.specialVariants && cd2.specialVariants.length ? cd2.specialVariants : [];
       selSpecial2.forEach(function(sh) { slots2.push({ card: cd2, variant: null, specialVariant: sh }); });
@@ -1689,6 +1733,19 @@ async function savePDF() {
       }
       var sym2 = card.set ? getSymbolUrl(card.set) : null;
       var numDisplay2 = card.num || null;
+      var totalVariantCount2 = 0;
+      var sclR2 = SET_CARD_DATA[card.set];
+      if (sclR2 && card.cardKey >= 0 && sclR2[card.cardKey]) {
+        var cdR2 = sclR2[card.cardKey];
+        var stdVars2 = Array.isArray(cdR2.variants) ? cdR2.variants.slice() : [];
+        if (includeSerials && Array.isArray(cdR2.serialVariants) && cdR2.serialVariants.length > 0) {
+          stdVars2 = stdVars2.filter(function(v) { return v !== 'Non-Holo'; });
+          stdVars2 = cdR2.serialVariants.concat(stdVars2);
+        }
+        var specVars2 = Array.isArray(cdR2.specialVariants) ? cdR2.specialVariants : [];
+        totalVariantCount2 = stdVars2.length + specVars2.length;
+      }
+      var showLabel2 = totalVariantCount2 > 1;
       return '<div class="card-slot">'
         + '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
         + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>'
@@ -1697,8 +1754,8 @@ async function savePDF() {
         +   (numDisplay2 ? '<div class="cs-number">' + esc(numDisplay2) + '</div>' : '<div class="cs-number blank">\u2014</div>')
         +   '<div class="cs-symbol-wrap"><img class="cs-symbol" src="' + (sym2 || BLANK_SYMBOL_URI) + '" alt=""/></div>'
         +   (card.set ? '<div class="cs-set">' + esc(card.set) + '</div>' : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-        +   (variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-        +   (specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+        +   (showLabel2 && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+        +   (showLabel2 && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
         + '</div></div>';
     }
 
