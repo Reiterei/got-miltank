@@ -239,6 +239,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   #preview{display:none;}
   aside{height:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;width:100%;border-right:none;zoom:1.15;}
   .sidebar-header{width:100%;max-width:350px;}
+  .site-logo{image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;transform:scale(calc(1/1.15));transform-origin:left center;}
 }
 
 /* Searchable card picker */
@@ -308,7 +309,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   <aside>
     <!-- Logo + Title + Gear -->
     <div class="sidebar-header" style="position:relative;display:flex;align-items:center;justify-content:center;padding:16px 50px 10px;flex-shrink:0;">
-      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;image-rendering:pixelated;" alt="logo"/>
+      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;" alt="logo" class="site-logo"/>
       <div style="text-align:center;">
         <div style="font-size:.95rem;font-weight:700;letter-spacing:.06em;">POKÉMON TCG SPECIES</div>
         <div style="font-size:.7rem;font-weight:400;color:var(--muted);letter-spacing:.04em;">Placeholder Cards</div>
@@ -732,7 +733,7 @@ function addCard(data) {
         newCard.name    = bc.name;
         newCard.num     = bc.num || '';
         var autoVariants = Array.isArray(bc.variants) ? bc.variants : [];
-        newCard.variants = autoVariants.length === 1 ? [autoVariants[0]] : [];
+        newCard.variants = [];
       }
     }
   }
@@ -772,6 +773,7 @@ function toggleVariant(btn, variant) {
   var idx = c.variants.indexOf(variant);
   if (idx === -1) { c.variants.push(variant); } else { c.variants.splice(idx, 1); }
   btn.classList.toggle('selected', c.variants.indexOf(variant) !== -1);
+  updateVariantWarning(id, c);
   renderPreview();
 }
 
@@ -783,7 +785,18 @@ function toggleSpecialVariant(btn, variant) {
   var idx = c.specialVariants.indexOf(variant);
   if (idx === -1) { c.specialVariants.push(variant); } else { c.specialVariants.splice(idx, 1); }
   btn.classList.toggle('selected', c.specialVariants.indexOf(variant) !== -1);
+  updateVariantWarning(id, c);
   renderPreview();
+}
+
+function updateVariantWarning(cardId, c) {
+  var form = document.getElementById('form-' + cardId);
+  if (!form) return;
+  var warning = form.querySelector('.variant-warning');
+  var noneSelected = (c.variants || []).length === 0 && (c.specialVariants || []).length === 0;
+  if (warning) {
+    warning.style.display = noneSelected ? '' : 'none';
+  }
 }
 
 
@@ -928,7 +941,7 @@ function pickCard(e, cardId, idx) {
   c.name     = bc.name;
   c.num      = bc.num || '';
   var pickVariants = Array.isArray(bc.variants) ? bc.variants : [];
-  c.variants = pickVariants.length === 1 ? [pickVariants[0]] : [];
+  c.variants = [];
   c.specialVariants = [];
   closeCardPicker(cardId);
   renderForms();
@@ -1054,7 +1067,7 @@ function pickSet(e, cardId, setName) {
     c.name    = bc.name;
     c.num     = bc.num || '';
     var autoVariants = Array.isArray(bc.variants) ? bc.variants : [];
-    c.variants = autoVariants.length === 1 ? [autoVariants[0]] : [];
+    c.variants = [];
   }
   closeSetPicker(cardId);
   renderForms();
@@ -1259,6 +1272,17 @@ function renderForms() {
       // variants
       + (!noCard ? variantHTML : '')
       + (!noCard ? specialVariantHTML : '')
+      + (function() {
+          // Show warning if card is selected but no variant or special variant is chosen
+          if (noCard || !scCard) return '';
+          var hasVariants = variantOptions.length > 0;
+          var hasSpecial  = specialVarOptions.length > 0;
+          if (!hasVariants && !hasSpecial) return ''; // card has no variant data at all — no warning needed
+          var noneSelected = (card.variants || []).length === 0 && (card.specialVariants || []).length === 0;
+          return noneSelected
+            ? '<div class="variant-warning" style="font-size:.6rem;color:#c47a82;margin-top:8px;text-align:center;">⚠ No Variants Selected</div>'
+            : '';
+        }())
       + '</div>'  // close card-form-body
       + '</div></div>';
   }).join('');
@@ -1473,6 +1497,13 @@ function esc(s) {
 }
 
 // ── SAVE PDF ─────────────────────────────────────────
+
+// Returns true if we're in mobile view (preview is hidden by media query)
+function isMobileView() {
+  var preview = document.getElementById('preview');
+  return preview && getComputedStyle(preview).display === 'none';
+}
+
 async function savePDF() {
   var pdfBtn = document.getElementById('pdf-btn');
   if (pdfBtn) {
@@ -1480,23 +1511,106 @@ async function savePDF() {
     pdfBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="8 6" transform="rotate(-90 7 7)"><animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.8s" repeatCount="indefinite"/></circle></svg> Generating\u2026';
   }
 
-  // If preview is hidden (mobile), temporarily show it so html2canvas can render it
-  var preview = document.getElementById('preview');
-  var previewWasHidden = preview && getComputedStyle(preview).display === 'none';
-  if (previewWasHidden) {
-    preview.style.display = 'block';
-    preview.style.visibility = 'hidden'; // show in layout but invisible to user
-    // Wait two frames for the browser to reflow and paint before capturing
-    await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });
-    scalePages();
+  // On mobile, build pages in a detached off-screen container at full native size
+  // so html2canvas always gets fully laid-out elements regardless of preview visibility
+  var offscreen = null;
+  if (isMobileView()) {
+    var p2       = PAPER_DATA[currentPaper];
+    var pageWpx2 = Math.round(p2.pageW  * DPI);
+    var pageHpx2 = Math.round(p2.pageH  * DPI);
+    var marginPx2 = Math.round(p2.margin * DPI);
+
+    // Build slots
+    var slots2 = [];
+    for (var ci2 = 0; ci2 < cards.length; ci2++) {
+      var cd2 = cards[ci2];
+      var variantOpts2 = [];
+      var hasVariantData2 = false;
+      var sclP2 = SET_CARD_DATA[cd2.set];
+      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
+        var cdVariants2 = sclP2[cd2.cardKey].variants;
+        if (Array.isArray(cdVariants2) && cdVariants2.length >= 1) { variantOpts2 = cdVariants2.slice(); hasVariantData2 = true; }
+        if (includeSerials) {
+          var cdSerials2 = sclP2[cd2.cardKey].serialVariants || [];
+          if (cdSerials2.length > 0) {
+            variantOpts2 = variantOpts2.filter(function(v) { return v !== 'Non-Holo'; });
+            variantOpts2 = cdSerials2.concat(variantOpts2);
+          }
+        }
+      }
+      var hasPrChoice2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length > 0;
+      var hasPrOnly12  = !hasVariantData2;
+      var hasPr1Sel2   = variantOpts2.length === 1 && cd2.variants && cd2.variants.length > 0;
+      if (hasPrOnly12 || hasPr1Sel2 || hasPrChoice2) {
+        var visibleSelected2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length
+          ? cd2.variants.filter(function(v) { return variantOpts2.indexOf(v) !== -1; })
+          : [null];
+        visibleSelected2.forEach(function(variant) { slots2.push({ card: cd2, variant: variant, specialVariant: null }); });
+      }
+      var specialOpts2 = [];
+      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
+        var cdSpecialData2 = sclP2[cd2.cardKey].specialVariants;
+        if (Array.isArray(cdSpecialData2) && cdSpecialData2.length >= 1) specialOpts2 = cdSpecialData2;
+      }
+      var selSpecial2 = specialOpts2.length > 0 && cd2.specialVariants && cd2.specialVariants.length ? cd2.specialVariants : [];
+      selSpecial2.forEach(function(sh) { slots2.push({ card: cd2, variant: null, specialVariant: sh }); });
+    }
+
+    var perPage2 = p2.cols * p2.rows;
+    var chunks2 = [];
+    for (var i2 = 0; i2 < slots2.length; i2 += perPage2) {
+      var chunk2 = slots2.slice(i2, i2 + perPage2);
+      while (chunk2.length < perPage2) chunk2.push(null);
+      chunks2.push(chunk2);
+    }
+
+    function slotHTML2(card, variantOverride, specialVariantOverride) {
+      if (!card || !card.name || !card.name.trim()) {
+        return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
+      }
+      var sym2 = card.set ? getSymbolUrl(card.set) : null;
+      var numDisplay2 = card.num || null;
+      return '<div class="card-slot">'
+        + '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
+        + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>'
+        + '<div class="cs-inner">'
+        +   '<div class="cs-name">' + esc(card.name) + '</div>'
+        +   (numDisplay2 ? '<div class="cs-number">' + esc(numDisplay2) + '</div>' : '<div class="cs-number blank">\u2014</div>')
+        +   '<div class="cs-symbol-wrap"><img class="cs-symbol" src="' + (sym2 || BLANK_SYMBOL_URI) + '" alt=""/></div>'
+        +   (card.set ? '<div class="cs-set">' + esc(card.set) + '</div>' : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
+        +   (variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+        +   (specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+        + '</div></div>';
+    }
+
+    // Build off-screen container — positioned off-screen but fully rendered by the browser.
+    // Use opacity:0 (not visibility:hidden) so html2canvas can still capture the content.
+    offscreen = document.createElement('div');
+    offscreen.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + pageWpx2 + 'px;opacity:0;pointer-events:none;';
+    chunks2.forEach(function(chunk2) {
+      var pageEl = document.createElement('div');
+      pageEl.className = 'page-wrap';
+      pageEl.style.cssText = 'width:' + pageWpx2 + 'px;height:' + pageHpx2 + 'px;padding:' + marginPx2 + 'px;background:white;display:flex;align-items:center;justify-content:center;';
+      pageEl.innerHTML = '<div class="card-grid border-' + currentBorderType + '" style="'
+        + 'grid-template-columns:repeat(' + p2.cols + ',' + CARD_W_PX + 'px);'
+        + 'grid-template-rows:repeat(' + p2.rows + ',' + CARD_H_PX + 'px);'
+        + 'gap:0;">'
+        + chunk2.map(function(slot) {
+            if (!slot) return slotHTML2(null, null, null);
+            return slotHTML2(slot.card, slot.variant, slot.specialVariant);
+          }).join('')
+        + '</div>';
+      offscreen.appendChild(pageEl);
+    });
+    document.body.appendChild(offscreen);
+    // Wait two frames for the browser to lay out and paint the off-screen content
     await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });
   }
 
   try {
     var p       = PAPER_DATA[currentPaper];
-    var pageWin = p.pageW;  // inches
-    var pageHin = p.pageH;  // inches
-    // Convert inches → mm for jsPDF
+    var pageWin = p.pageW;
+    var pageHin = p.pageH;
     var pageWmm = pageWin * 25.4;
     var pageHmm = pageHin * 25.4;
 
@@ -1508,8 +1622,10 @@ async function savePDF() {
       compress: true
     });
 
-    // Grab all rendered page-wrap divs (the white sheet elements)
-    var pageWraps = document.querySelectorAll('#pages-container .page-wrap');
+    // On mobile use the offscreen page wraps; on desktop use the live preview ones
+    var pageWraps = offscreen
+      ? offscreen.querySelectorAll('.page-wrap')
+      : document.querySelectorAll('#pages-container .page-wrap');
     if (!pageWraps.length) return;
 
     for (var i = 0; i < pageWraps.length; i++) {
@@ -1517,8 +1633,7 @@ async function savePDF() {
                               pageWin > pageHin ? 'landscape' : 'portrait');
 
       var wrap = pageWraps[i];
-      var scaleWrap = wrap.parentElement; // .page-scale-wrap
-      // Temporarily remove clipping and scale so html2canvas sees the full native size
+      var scaleWrap = offscreen ? null : wrap.parentElement; // .page-scale-wrap (desktop only)
       var prevTransform = wrap.style.transform;
       var prevWrapW = scaleWrap ? scaleWrap.style.width : null;
       var prevWrapH = scaleWrap ? scaleWrap.style.height : null;
@@ -1554,10 +1669,7 @@ async function savePDF() {
     alert('PDF generation failed: ' + err.message);
     console.error(err);
   } finally {
-    if (previewWasHidden) {
-      preview.style.display = '';
-      preview.style.visibility = '';
-    }
+    if (offscreen && offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
     if (pdfBtn) {
       var hasAny = cards.some(function(c) { return c.name && c.name.trim(); });
       pdfBtn.disabled = !hasAny;
