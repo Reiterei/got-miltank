@@ -271,7 +271,29 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
 .card-picker-option.no-results{color:var(--muted);cursor:default;}
 @keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 24px 20px;max-width:340px;width:90%;display:flex;flex-direction:column;gap:14px;}
+.modal-title{font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:.04em;}
+.modal-body{font-size:.7rem;color:var(--muted);line-height:1.6;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btn{padding:7px 16px;border-radius:6px;font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.7rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;}
+.modal-btn:hover{border-color:var(--text);color:var(--text);}
+.modal-btn-confirm{background:var(--accent);color:#111;border-color:var(--accent);}
+.modal-btn-confirm:hover{background:#e0a8af;border-color:#e0a8af;color:#111;}
 </style>
+
+<!-- Pokemon change confirmation modal -->
+<div class="modal-overlay" id="pokemon-confirm-modal" onclick="if(event.target===this)closePokemonConfirmModal();">
+  <div class="modal-box">
+    <div class="modal-title">⚠ Change Pokémon Species?</div>
+    <div class="modal-body">Changing the Pokémon species will clear all current cards. This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closePokemonConfirmModal()">Cancel</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmPokemonChange()">Yes, Reset Cards</button>
+    </div>
+  </div>
+</div>
 
 <div class="app-container">
 <div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);">
@@ -489,10 +511,37 @@ function pokemonOptionMousedown(e) {
   pickPokemon(e, 'global', name);
 }
 
+var _pendingPokemonChange = null;
+
 function pickPokemon(e, uid, name) {
   e.preventDefault();
   var newFilter = name;
   if (newFilter === pokemonFilter) { closePokemonPicker(); return; }
+  // If cards exist, confirm before resetting
+  if (cards.length > 0) {
+    _pendingPokemonChange = newFilter;
+    closePokemonPicker();
+    document.getElementById('pokemon-confirm-modal').classList.add('open');
+    return;
+  }
+  applyPokemonChange(newFilter);
+}
+
+function confirmPokemonChange() {
+  closePokemonConfirmModal();
+  if (_pendingPokemonChange !== null) {
+    cards = [];
+    applyPokemonChange(_pendingPokemonChange);
+    _pendingPokemonChange = null;
+  }
+}
+
+function closePokemonConfirmModal() {
+  document.getElementById('pokemon-confirm-modal').classList.remove('open');
+  _pendingPokemonChange = null;
+}
+
+function applyPokemonChange(newFilter) {
   pokemonFilter = newFilter;
   cards.forEach(function(c) {
     if (pokemonFilter && c.set) {
@@ -1444,32 +1493,39 @@ function esc(s) {
 }
 
 // Finds all tint canvases in the preview and draws their symbol image tinted to the target color.
-// Uses globalCompositeOperation 'multiply': white pixels become transparent, black pixels become
-// the target color. The canvas background is first filled with the type color, then the image
-// is drawn with 'multiply' so white areas cancel out and dark areas take the color.
+// Uses pixel manipulation: dark pixels are replaced with the type color, light pixels stay white.
 function tintSymbolCanvases() {
   var canvases = document.querySelectorAll('canvas.cs-symbol[data-src]');
   canvases.forEach(function(canvas) {
     var src   = canvas.getAttribute('data-src');
     var color = canvas.getAttribute('data-color');
     var ctx   = canvas.getContext('2d');
-    var img   = new Image();
+    // Parse the hex color into RGB
+    var hex = color.replace('#','');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    var tr = parseInt(hex.slice(0,2),16);
+    var tg = parseInt(hex.slice(2,4),16);
+    var tb = parseInt(hex.slice(4,6),16);
+    var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function() {
       var w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
-      // Step 1: draw the image normally to get its shape
       ctx.drawImage(img, 0, 0, w, h);
-      // Step 2: use 'source-in' to mask the color to the non-transparent pixels
-      ctx.globalCompositeOperation = 'source-in';
-      ctx.fillStyle = color;
-      ctx.fillRect(0, 0, w, h);
-      // Step 3: restore
-      ctx.globalCompositeOperation = 'source-over';
-      // Step 4: draw the original image back with 'multiply' so white areas lighten back through
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.drawImage(img, 0, 0, w, h);
-      ctx.globalCompositeOperation = 'source-over';
+      var imageData = ctx.getImageData(0, 0, w, h);
+      var data = imageData.data;
+      for (var i = 0; i < data.length; i += 4) {
+        var r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+        if (a < 10) continue; // skip fully transparent
+        // Brightness: 0 = black, 255 = white
+        var brightness = (r + g + b) / 3;
+        // Blend: dark pixels → type color, light pixels → white
+        var t = brightness / 255; // 0 at black, 1 at white
+        data[i]   = Math.round(tr + (255 - tr) * t);
+        data[i+1] = Math.round(tg + (255 - tg) * t);
+        data[i+2] = Math.round(tb + (255 - tb) * t);
+      }
+      ctx.putImageData(imageData, 0, 0);
     };
     img.src = src;
   });
