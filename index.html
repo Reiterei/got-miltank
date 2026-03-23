@@ -308,6 +308,14 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   </div>
 </div>
 
+<!-- Miltank Easter Egg Player -->
+<div id="miltank-player" style="display:none;position:fixed;bottom:18px;right:18px;z-index:9999;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;display:none;align-items:center;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,.5);">
+  <span style="font-size:1.1rem;">🐄</span>
+  <span style="font-size:.68rem;color:var(--accent);font-weight:600;letter-spacing:.04em;">MOO!</span>
+  <button onclick="stopMiltankPlayer()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 4px;border-radius:4px;margin-left:4px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+</div>
+<iframe id="miltank-iframe" style="display:none;width:0;height:0;border:none;position:fixed;left:-9999px;" allow="autoplay" src=""></iframe>
+
 <div class="app-container">
 <div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);">
   <div style="text-align:center;padding:40px;">
@@ -321,7 +329,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   <aside>
     <!-- Logo + Title + Gear -->
     <div class="sidebar-header" style="position:relative;display:flex;align-items:center;justify-content:center;padding:16px 50px 10px;flex-shrink:0;">
-      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;" alt="logo" class="site-logo"/>
+      <img src="https://reiterei.github.io/got-miltank/gotmiltank.png" style="width:41px;height:28px;object-fit:contain;position:absolute;left:16px;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;cursor:pointer;" alt="logo" class="site-logo" onclick="logoEasterEgg()"/>
       <div style="text-align:center;">
         <div style="font-size:.95rem;font-weight:700;letter-spacing:.06em;">POKÉMON TCG SPECIES</div>
         <div style="font-size:.7rem;font-weight:400;color:var(--muted);letter-spacing:.04em;">Placeholder Cards</div>
@@ -688,6 +696,31 @@ function setBorderType(type) {
 function toggleSettings() {
   var panel = document.getElementById('settings-panel');
   if (panel) panel.classList.toggle('open');
+}
+
+function logoEasterEgg() {
+  // Check if selected Pokémon is Miltank by name
+  if (!pokemonFilter) return;
+  var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
+  var name = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
+  if (name.toLowerCase() !== 'miltank') return;
+
+  var iframe = document.getElementById('miltank-iframe');
+  var player = document.getElementById('miltank-player');
+  // Toggle: if already playing, stop it
+  if (iframe.src && iframe.src.indexOf('autoplay=1') !== -1) {
+    stopMiltankPlayer();
+    return;
+  }
+  iframe.src = 'https://www.youtube.com/embed/J5J-pMxbmwc?autoplay=1&controls=0&loop=1&playlist=J5J-pMxbmwc';
+  player.style.display = 'flex';
+}
+
+function stopMiltankPlayer() {
+  var iframe = document.getElementById('miltank-iframe');
+  var player = document.getElementById('miltank-player');
+  iframe.src = '';
+  player.style.display = 'none';
 }
 
 function setPaper(name) {
