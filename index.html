@@ -702,7 +702,7 @@ function logoEasterEgg() {
 }
 
 var miltankPlaying = false;
-var miltankVolume  = 80;
+var miltankVolume  = 10;
 var _miltankAudio  = null;
 
 function startMiltankPlayer() {
@@ -1221,7 +1221,6 @@ function renderForms() {
     pf.innerHTML = '<div style="margin-bottom:8px;">'
       + (miltankPlaying
         ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--accent);border-radius:7px;padding:7px 10px;">'
-          + '<span style="font-size:.9rem;">🐄</span>'
           + '<input type="range" id="miltank-volume" min="0" max="100" value="' + miltankVolume + '"'
           + ' oninput="setMiltankVolume(this.value)"'
           + ' style="flex:1;accent-color:var(--accent);cursor:pointer;"/>'
