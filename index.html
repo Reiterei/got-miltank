@@ -447,7 +447,6 @@ var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var collapsedIds = {};
 
-// ── PAPER ────────────────────────────────────────────
 // ── POKEMON FILTER ───────────────────────────────────
 var activePokemonPickerId = null;
 
@@ -525,12 +524,12 @@ function filterPokemonPicker(value) {
 function pokemonOptionMousedown(e) {
   e.preventDefault();
   var name = e.currentTarget.dataset.pokemon;
-  pickPokemon(e, 'global', name);
+  pickPokemon(e, name);
 }
 
 var _pendingPokemonChange = null;
 
-function pickPokemon(e, uid, name) {
+function pickPokemon(e, name) {
   e.preventDefault();
   var newFilter = name;
   if (newFilter === pokemonFilter) { closePokemonPicker(); return; }
@@ -548,9 +547,7 @@ function confirmPokemonChange() {
   var pending = _pendingPokemonChange;
   _pendingPokemonChange = null;
   document.getElementById('pokemon-confirm-modal').classList.remove('open');
-  if (pending === '__FILL__') {
-    fillAllCards();
-  } else if (pending !== null) {
+  if (pending !== null) {
     cards = [];
     applyPokemonChange(pending);
   }
@@ -612,7 +609,7 @@ function pokemonPickerKeydown(e) {
     if (opts[prev]) { opts[prev].classList.add('highlighted'); opts[prev].scrollIntoView({block:'nearest'}); }
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (highlighted) pickPokemon(e, 'global', highlighted.dataset.pokemon);
+    if (highlighted) pickPokemon(e, highlighted.dataset.pokemon);
   } else if (e.key === 'Escape') {
     closePokemonPicker();
   }
@@ -742,7 +739,6 @@ function setMiltankVolume(val) {
 function setPaper(name) {
   currentPaper = name;
   var p = PAPER_DATA[name];
-  var perPage = p.cols * p.rows;
   var el = document.getElementById('print-page-style');
   if (!el) { el = document.createElement('style'); el.id = 'print-page-style'; document.head.appendChild(el); }
   el.textContent = '@media print { @page { size: ' + p.css + '; margin: ' + p.margin + 'in; } }';
@@ -795,7 +791,6 @@ function addCard(data) {
         newCard.cardKey = allCards.indexOf(bc);
         newCard.name    = bc.name;
         newCard.num     = bc.num || '';
-        var autoVariants = Array.isArray(bc.variants) ? bc.variants : [];
         newCard.variants = [];
       }
     }
@@ -1070,7 +1065,6 @@ function pickCard(e, cardId, idx) {
   c.cardKey  = idx;
   c.name     = bc.name;
   c.num      = bc.num || '';
-  var pickVariants = Array.isArray(bc.variants) ? bc.variants : [];
   c.variants = [];
   c.specialVariants = [];
   closeCardPicker(cardId);
@@ -1196,7 +1190,6 @@ function pickSet(e, cardId, setName) {
     c.cardKey = idx;
     c.name    = bc.name;
     c.num     = bc.num || '';
-    var autoVariants = Array.isArray(bc.variants) ? bc.variants : [];
     c.variants = [];
   }
   closeSetPicker(cardId);
@@ -1288,9 +1281,7 @@ function renderForms() {
   }
 
   container.innerHTML = cards.map(function(card, idx) {
-    var info     = SET_DATA[card.set] || null;
     var imgSrc   = card.set ? getSymbolUrl(card.set) : '';
-    var noSet    = !card.set;
     var scd      = SET_CARD_DATA[card.set];
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
     var noCard   = !!scd && !scCard;
@@ -1298,15 +1289,14 @@ function renderForms() {
     // Standard Variants selector — multi-select pills
     var variantHTML = '';
     var variantOptions = [];
-    var sclH = SET_CARD_DATA[card.set];
-    if (sclH && card.cardKey >= 0 && sclH[card.cardKey]) {
-      var cardVariants = sclH[card.cardKey].variants;
+    if (scd && card.cardKey >= 0 && scd[card.cardKey]) {
+      var cardVariants = scd[card.cardKey].variants;
       if (Array.isArray(cardVariants) && cardVariants.length >= 1) {
         variantOptions = cardVariants.slice(); // copy so we don't mutate sheet data
       }
       // If Include EX Serial Numbers is checked, remove Non-Holo and prepend serial variants
       if (includeSerials) {
-        var cardSerials = sclH[card.cardKey].serialVariants || [];
+        var cardSerials = scd[card.cardKey].serialVariants || [];
         if (cardSerials.length > 0) {
           variantOptions = variantOptions.filter(function(v) { return v !== 'Non-Holo'; });
           variantOptions = cardSerials.concat(variantOptions);
@@ -1338,8 +1328,8 @@ function renderForms() {
     // Special Variants selector — same style, only shown if data exists
     var specialVariantHTML = '';
     var specialVarOptions = [];
-    if (sclH && card.cardKey >= 0 && sclH[card.cardKey]) {
-      var cardSpecialData = sclH[card.cardKey].specialVariants;
+    if (scd && card.cardKey >= 0 && scd[card.cardKey]) {
+      var cardSpecialData = scd[card.cardKey].specialVariants;
       if (Array.isArray(cardSpecialData) && cardSpecialData.length >= 1) {
         specialVarOptions = cardSpecialData;
       }
@@ -1497,10 +1487,6 @@ function renderPreview() {
   var pageWpx  = Math.round(p.pageW  * DPI);
   var pageHpx  = Math.round(p.pageH  * DPI);
   var marginPx = Math.round(p.margin * DPI);
-  var usableW  = p.pageW  - 2 * p.margin;
-  var usableH  = p.pageH  - 2 * p.margin;
-  var gapWpx   = 0;
-  var gapHpx   = 0;
 
   // Expand cards by variant combinations
   var slots = [];
@@ -1562,7 +1548,7 @@ function renderPreview() {
       + '<div class="card-grid border-' + currentBorderType + '" style="'
       + 'grid-template-columns:repeat(' + p.cols + ',' + CARD_W_PX + 'px);'
       + 'grid-template-rows:repeat(' + p.rows + ',' + CARD_H_PX + 'px);'
-      + 'gap:' + gapHpx + 'px ' + gapWpx + 'px;">'
+      + 'gap:0;">'
       + emptySlots + '</div></div></div>';
     document.getElementById('pg-label').textContent = '0 cards · 0 pages';
     applyLastScale();
@@ -1582,7 +1568,6 @@ function renderPreview() {
     if (!card || !card.name || !card.name.trim()) {
       return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span><div class="empty-slot-label">empty</div></div>';
     }
-    var info       = card.set ? SET_DATA[card.set] : null;
     var sym        = card.set ? getSymbolUrl(card.set) : null;
     var numDisplay = card.num || null;
 
@@ -1635,7 +1620,7 @@ function renderPreview() {
       +   '<div class="card-grid border-' + currentBorderType + '" style="'
       +     'grid-template-columns:repeat(' + p.cols + ',' + CARD_W_PX + 'px);'
       +     'grid-template-rows:repeat('    + p.rows + ',' + CARD_H_PX + 'px);'
-      +     'gap:' + gapHpx + 'px ' + gapWpx + 'px;'
+      +     "gap:0;"
       +   '">'
       +   chunk.map(function(slot) {
             if (!slot) return renderSlot(null, null, null);
