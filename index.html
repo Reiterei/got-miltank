@@ -115,15 +115,15 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
    or CSS outline, so we use inset border + per-corner spans. */
 
 /* Default: no border, dots only (shown via .corner-dot spans) */
-.card-slot { border: 1px solid transparent; }
+.card-slot { border: 1px solid transparent; margin: -1px; }
 
 /* Border type variants */
-.border-solid .card-slot  { border: 1px solid #999; }
-.border-dotted .card-slot { border: 1px dashed #999; }
-.border-none .card-slot   { border: 1px solid transparent; }
+.border-solid .card-slot  { border: 1px solid #999; margin: -1px; }
+.border-dotted .card-slot { border: 1px dashed #999; margin: -1px; }
+.border-none .card-slot   { border: 1px solid transparent; margin: -1px; }
 
 /* Dots mode: hide the border, show corner dots */
-.border-dots .card-slot   { border: 1px solid transparent; }
+.border-dots .card-slot   { border: 1px solid transparent; margin: -1px; }
 
 /* Suppress the old ::before pseudo-element entirely */
 .card-slot::before { display: none !important; }
@@ -518,11 +518,12 @@ function pickPokemon(e, uid, name) {
 }
 
 function confirmPokemonChange() {
-  closePokemonConfirmModal();
-  if (_pendingPokemonChange !== null) {
+  var pending = _pendingPokemonChange;
+  _pendingPokemonChange = null;
+  document.getElementById('pokemon-confirm-modal').classList.remove('open');
+  if (pending !== null) {
     cards = [];
-    applyPokemonChange(_pendingPokemonChange);
-    _pendingPokemonChange = null;
+    applyPokemonChange(pending);
   }
 }
 
@@ -545,7 +546,20 @@ function applyPokemonChange(newFilter) {
       }
     }
   });
-  closePokemonPicker();
+  // Close picker and update its display value to reflect new selection
+  activePokemonPickerId = null;
+  var drop  = document.getElementById('poke-picker-drop-global');
+  var input = document.getElementById('poke-picker-input-global');
+  if (drop) drop.classList.remove('open');
+  if (input) {
+    var displayVal = 'Pokémon Species';
+    if (pokemonFilter) {
+      var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
+      displayVal = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? pokemonFilter + ' - ' + POKEMON_LIST[dexIdx] : pokemonFilter;
+    }
+    input.value = displayVal;
+    input.setAttribute('readonly', '');
+  }
   renderForms();
   renderPreview();
 }
