@@ -15,7 +15,7 @@ body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;ba
 .app-container{width:100%;max-width:1536px;display:flex;flex-direction:column;flex:1;overflow:hidden;}
 
 .app{display:grid;grid-template-columns:325px 1fr;flex:1;overflow:hidden;}
-aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;height:100%;width:325px;}
+aside{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow-y:auto;height:100%;width:325px;position:relative;}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar{width:6px;height:6px;}
@@ -25,12 +25,9 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 * { scrollbar-width:thin; scrollbar-color:var(--border) var(--bg); }
 .settings-btn{position:absolute;top:50%;right:10px;transform:translateY(-50%);background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);padding:4px 7px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s,border-color .15s;font-size:1.1rem;line-height:1;}
 .settings-btn:hover{color:var(--text);background:var(--surface2);border-color:var(--text);}
-aside{position:relative;}
 .sidebar-inner{padding:12px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1;align-items:center;}
 .sidebar-inner > *{width:100%;max-width:325px;}
 .sidebar-inner label, .sidebar-inner .ctrl label, .s-label, .edition-pills{text-align:center;justify-content:center;}
-.card-form{text-align:center;}
-.card-form-header{text-align:left;justify-content:space-between;}
 
 /* Settings panel */
 .settings-panel{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--surface);z-index:10;padding:18px 16px;flex-direction:column;gap:18px;overflow-y:auto;}
@@ -48,23 +45,16 @@ aside{position:relative;}
 .ctrl input::placeholder{color:var(--muted2);}
 .ctrl input:disabled{opacity:.4;cursor:not-allowed;}
 
-
-
-.card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;}
+.card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;text-align:center;}
 .card-form.collapsed{gap:0;}
 .card-form.collapsed .card-form-body{display:none;}
 .collapse-btn{background:none;border:none;cursor:pointer;color:var(--muted);padding:0 0 0 6px;font-size:.75rem;line-height:1;transition:transform .15s;display:flex;align-items:center;}
 .collapse-btn:hover{color:var(--text);}
 .card-form.collapsed .collapse-btn{transform:rotate(-90deg);}
-.card-form-header{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
+.card-form-header{display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
 .card-form-header b{color:var(--accent);}
 .remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
 .remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
-
-
-
-
-
 
 .set-row{display:flex;align-items:center;gap:6px;width:100%;position:relative;}
 .set-row .card-picker{flex:1;min-width:0;}
@@ -74,7 +64,6 @@ aside{position:relative;}
 .edition-pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
 .edition-pill.selected{background:var(--accent);color:#111;border-color:var(--accent);}
 .edition-pill:disabled{opacity:.5;cursor:default;}
-
 
 .add-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:1.5px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;cursor:pointer;transition:all .15s;width:100%;}
 .add-card-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
@@ -281,6 +270,7 @@ aside{position:relative;}
 }
 .card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
 .card-picker-option.no-results{color:var(--muted);cursor:default;}
+@keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}
 </style>
 
 <div class="app-container">
@@ -292,7 +282,6 @@ aside{position:relative;}
     </div>
   </div>
 </div>
-<style>@keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}</style>
 <div class="app" style="display:none;">
   <aside>
     <!-- Logo + Title + Gear -->
@@ -371,7 +360,7 @@ aside{position:relative;}
     <div id="pages-container">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg></div><h3>No cards yet</h3><p>Add a card using the sidebar</p></div></div></div></aside></div>
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg></div><h3>No cards yet</h3><p>Add a card using the sidebar</p></div></div></div></div>
 </div>
 <script>
 // ── CONFIGURATION ────────────────────────────────────
@@ -1024,11 +1013,8 @@ function pickSet(e, cardId, setName) {
     c.variants = autoVariants.length === 1 ? [autoVariants[0]] : [];
   }
   closeSetPicker(cardId);
-  activeSetPickerId = null;
   renderForms();
   renderPreview();
-  var dropAfter = document.getElementById('set-picker-drop-' + cardId);
-  if (dropAfter) dropAfter.classList.remove('open');
 }
 
 function setPickerKeydown(e, cardId) {
@@ -1353,23 +1339,18 @@ function renderPreview() {
 
   // If no slots, show empty page grid and return
   if (slots.length === 0) {
-    var p0        = PAPER_DATA[currentPaper];
-    var pageWpx0  = Math.round(p0.pageW  * DPI);
-    var pageHpx0  = Math.round(p0.pageH  * DPI);
-    var marginPx0 = Math.round(p0.margin * DPI);
-    var gapWpx0   = 0;
-    var gapHpx0   = 0;
     var emptySlots = '';
-    for (var ei = 0; ei < p0.cols * p0.rows; ei++) emptySlots += '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
+    for (var ei = 0; ei < p.cols * p.rows; ei++) emptySlots += '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
     container.innerHTML =
-      '<div class="page-scale-wrap" data-page-w="' + pageWpx0 + '" data-page-h="' + pageHpx0 + '">'
-      + '<div class="page-wrap" style="width:' + pageWpx0 + 'px;height:' + pageHpx0 + 'px;padding:' + marginPx0 + 'px;">'
+      '<div class="page-scale-wrap" data-page-w="' + pageWpx + '" data-page-h="' + pageHpx + '">'
+      + '<div class="page-wrap" style="width:' + pageWpx + 'px;height:' + pageHpx + 'px;padding:' + marginPx + 'px;">'
       + '<div class="card-grid border-' + currentBorderType + '" style="'
-      + 'grid-template-columns:repeat(' + p0.cols + ',' + CARD_W_PX + 'px);'
-      + 'grid-template-rows:repeat(' + p0.rows + ',' + CARD_H_PX + 'px);'
-      + 'gap:' + gapHpx0 + 'px ' + gapWpx0 + 'px;">'
+      + 'grid-template-columns:repeat(' + p.cols + ',' + CARD_W_PX + 'px);'
+      + 'grid-template-rows:repeat(' + p.rows + ',' + CARD_H_PX + 'px);'
+      + 'gap:' + gapHpx + 'px ' + gapWpx + 'px;">'
       + emptySlots + '</div></div></div>';
     document.getElementById('pg-label').textContent = '0 cards · 0 pages';
+    tintSymbolCanvases();
     applyLastScale();
     requestAnimationFrame(scalePages);
     return;
@@ -1395,8 +1376,14 @@ function renderPreview() {
     var typeColor = printColor && sclR && card.cardKey >= 0 && sclR[card.cardKey] ? (sclR[card.cardKey].type || '') : '';
     var tc = typeColor ? typeColor : '';
     var textStyle = tc ? ' style="color:' + esc(tc) + ';"' : '';
-    var symbolWrapStyle = tc ? ' style="background:' + esc(tc) + ';border-radius:50%;"' : '';
-    var symbolImgStyle = tc ? ' style="mix-blend-mode:lighten;"' : '';
+
+    // For tinted symbols use a canvas; for plain symbols use an img
+    var symbolEl;
+    if (tc && sym) {
+      symbolEl = '<canvas class="cs-symbol" data-src="' + esc(sym) + '" data-color="' + esc(tc) + '" width="80" height="80"></canvas>';
+    } else {
+      symbolEl = '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>';
+    }
 
     return '<div class="card-slot">'
       + '<span class="corner-dot tl"></span>'
@@ -1408,8 +1395,8 @@ function renderPreview() {
       +   (numDisplay
             ? '<div class="cs-number"' + textStyle + '>' + esc(numDisplay) + '</div>'
             : '<div class="cs-number blank">\u2014</div>')
-      +   '<div class="cs-symbol-wrap"' + symbolWrapStyle + '>'
-      +     '<img class="cs-symbol"' + symbolImgStyle + ' src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
+      +   '<div class="cs-symbol-wrap">'
+      +     symbolEl
       +   '</div>'
       +   (card.set
             ? '<div class="cs-set"' + textStyle + '>' + esc(card.set) + '</div>'
@@ -1445,6 +1432,7 @@ function renderPreview() {
   var n = slots.filter(function(s) { return s && s.card && s.card.name && s.card.name.trim(); }).length;
   document.getElementById('pg-label').textContent =
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
+  tintSymbolCanvases();
   applyLastScale();
   requestAnimationFrame(scalePages);
   saveState();
@@ -1455,12 +1443,53 @@ function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Finds all tint canvases in the preview and draws their symbol image tinted to the target color.
+// Uses globalCompositeOperation 'multiply': white pixels become transparent, black pixels become
+// the target color. The canvas background is first filled with the type color, then the image
+// is drawn with 'multiply' so white areas cancel out and dark areas take the color.
+function tintSymbolCanvases() {
+  var canvases = document.querySelectorAll('canvas.cs-symbol[data-src]');
+  canvases.forEach(function(canvas) {
+    var src   = canvas.getAttribute('data-src');
+    var color = canvas.getAttribute('data-color');
+    var ctx   = canvas.getContext('2d');
+    var img   = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // Step 1: draw the image normally to get its shape
+      ctx.drawImage(img, 0, 0, w, h);
+      // Step 2: use 'source-in' to mask the color to the non-transparent pixels
+      ctx.globalCompositeOperation = 'source-in';
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, w, h);
+      // Step 3: restore
+      ctx.globalCompositeOperation = 'source-over';
+      // Step 4: draw the original image back with 'multiply' so white areas lighten back through
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(img, 0, 0, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+    };
+    img.src = src;
+  });
+}
+
 // ── SAVE PDF ─────────────────────────────────────────
 async function savePDF() {
   var pdfBtn = document.getElementById('pdf-btn');
   if (pdfBtn) {
     pdfBtn.disabled = true;
     pdfBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="8 6" transform="rotate(-90 7 7)"><animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.8s" repeatCount="indefinite"/></circle></svg> Generating\u2026';
+  }
+
+  // If preview is hidden (mobile), temporarily show it so html2canvas can render it
+  var preview = document.getElementById('preview');
+  var previewWasHidden = preview && getComputedStyle(preview).display === 'none';
+  if (previewWasHidden) {
+    preview.style.display = 'block';
+    preview.style.visibility = 'hidden'; // show in layout but invisible to user
+    scalePages(); // recalculate page scale now that preview has dimensions
   }
 
   try {
@@ -1511,6 +1540,10 @@ async function savePDF() {
     alert('PDF generation failed: ' + err.message);
     console.error(err);
   } finally {
+    if (previewWasHidden) {
+      preview.style.display = '';
+      preview.style.visibility = '';
+    }
     if (pdfBtn) {
       var hasAny = cards.some(function(c) { return c.name && c.name.trim(); });
       pdfBtn.disabled = !hasAny;
