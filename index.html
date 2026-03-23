@@ -309,12 +309,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 </div>
 
 <!-- Miltank Easter Egg Player -->
-<div id="miltank-player" style="display:none;position:fixed;bottom:18px;right:18px;z-index:9999;background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;display:none;align-items:center;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,.5);">
-  <span style="font-size:1.1rem;">🐄</span>
-  <span style="font-size:.68rem;color:var(--accent);font-weight:600;letter-spacing:.04em;">MOO!</span>
-  <button onclick="stopMiltankPlayer()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 4px;border-radius:4px;margin-left:4px;transition:color .15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
-</div>
-<iframe id="miltank-iframe" style="display:none;width:0;height:0;border:none;position:fixed;left:-9999px;" allow="autoplay" src=""></iframe>
 
 <div class="app-container">
 <div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);">
@@ -699,28 +693,38 @@ function toggleSettings() {
 }
 
 function logoEasterEgg() {
-  // Check if selected Pokémon is Miltank by name
   if (!pokemonFilter) return;
   var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
   var name = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
   if (name.toLowerCase() !== 'miltank') return;
+  if (miltankPlaying) { stopMiltankPlayer(); return; }
+  startMiltankPlayer();
+}
 
-  var iframe = document.getElementById('miltank-iframe');
-  var player = document.getElementById('miltank-player');
-  // Toggle: if already playing, stop it
-  if (iframe.src && iframe.src.indexOf('autoplay=1') !== -1) {
-    stopMiltankPlayer();
-    return;
+var miltankPlaying = false;
+var miltankVolume  = 80;
+var _miltankAudio  = null;
+
+function startMiltankPlayer() {
+  miltankPlaying = true;
+  if (!_miltankAudio) {
+    _miltankAudio = new Audio('https://reiterei.github.io/got-miltank/i_like_miltank.mp3');
+    _miltankAudio.loop = true;
   }
-  iframe.src = 'https://www.youtube.com/embed/J5J-pMxbmwc?autoplay=1&controls=0&loop=1&playlist=J5J-pMxbmwc';
-  player.style.display = 'flex';
+  _miltankAudio.volume = miltankVolume / 100;
+  _miltankAudio.play();
+  renderForms();
 }
 
 function stopMiltankPlayer() {
-  var iframe = document.getElementById('miltank-iframe');
-  var player = document.getElementById('miltank-player');
-  iframe.src = '';
-  player.style.display = 'none';
+  miltankPlaying = false;
+  if (_miltankAudio) { _miltankAudio.pause(); _miltankAudio.currentTime = 0; }
+  renderForms();
+}
+
+function setMiltankVolume(val) {
+  miltankVolume = parseInt(val, 10);
+  if (_miltankAudio) _miltankAudio.volume = miltankVolume / 100;
 }
 
 function setPaper(name) {
@@ -1215,6 +1219,15 @@ function renderForms() {
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
     pf.innerHTML = '<div style="margin-bottom:8px;">'
+      + (miltankPlaying
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--accent);border-radius:7px;padding:7px 10px;">'
+          + '<span style="font-size:.9rem;">🐄</span>'
+          + '<input type="range" id="miltank-volume" min="0" max="100" value="' + miltankVolume + '"'
+          + ' oninput="setMiltankVolume(this.value)"'
+          + ' style="flex:1;accent-color:var(--accent);cursor:pointer;"/>'
+          + '<button onclick="stopMiltankPlayer()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s;" onmouseover="this.style.color=\'var(--text)\'" onmouseout="this.style.color=\'var(--muted)\'">✕</button>'
+          + '</div>'
+        : '')
       + '<div class="card-picker" id="poke-picker-wrap">'
       + '<input type="text" class="card-picker-input"'
       + ' id="poke-picker-input-global"'
