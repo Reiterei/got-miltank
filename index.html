@@ -392,35 +392,71 @@ function getSymbolUrl(setName) {
   return 'symbols/' + symbol;
 }
 
-// Convert a hex color to a CSS filter that tints a black image to that color.
-// Uses an approximation via sepia+saturate+hue-rotate that works well for print.
+// Convert a hex color to an accurate CSS filter using an iterative solver.
+// Based on the algorithm by Barrett Sonntag (codepen.io/sosuke).
 function hexToFilter(hex) {
   if (!hex || hex.length < 4) return '';
   hex = hex.replace('#', '');
   if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
-  var r = parseInt(hex.substring(0,2), 16) / 255;
-  var g = parseInt(hex.substring(2,4), 16) / 255;
-  var b = parseInt(hex.substring(4,6), 16) / 255;
-  // Convert RGB to HSL
-  var max = Math.max(r,g,b), min = Math.min(r,g,b);
-  var h, s, l = (max+min)/2;
-  if (max === min) { h = s = 0; }
-  else {
-    var d = max - min;
-    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
-    switch(max) {
-      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
-      case g: h = ((b-r)/d + 2)/6; break;
-      case b: h = ((r-g)/d + 4)/6; break;
+  var r = parseInt(hex.substring(0,2), 16);
+  var g = parseInt(hex.substring(2,4), 16);
+  var b = parseInt(hex.substring(4,6), 16);
+
+  function clamp(v,min,max){return Math.min(max,Math.max(min,v));}
+  function hsl2rgb(h,s,l){
+    s/=100;l/=100;var a=s*Math.min(l,1-l);
+    function f(n){var k=(n+h/30)%12;return l-a*Math.max(-1,Math.min(k-3,9-k,1));}
+    return [Math.round(f(0)*255),Math.round(f(8)*255),Math.round(f(4)*255)];
+  }
+  function applyFilter(filters){
+    // Apply CSS filters to [0,0,0] black pixel
+    var r=0,g=0,b=0;
+    // invert
+    r=255-r;g=255-g;b=255-b;
+    // sepia
+    var sr=r*0.393+g*0.769+b*0.189,sg=r*0.349+g*0.686+b*0.168,sb=r*0.272+g*0.534+b*0.131;
+    r=clamp(sr,0,255);g=clamp(sg,0,255);b=clamp(sb,0,255);
+    // saturate
+    var sat=filters[0]/100;
+    var l2=0.213*r+0.715*g+0.072*b;
+    r=clamp(l2+(r-l2)*sat,0,255);g=clamp(l2+(g-l2)*sat,0,255);b=clamp(l2+(b-l2)*sat,0,255);
+    // hue-rotate
+    var angle=filters[1]*Math.PI/180;
+    var cos=Math.cos(angle),sin=Math.sin(angle);
+    var nr=clamp((0.213+cos*0.787-sin*0.213)*r+(0.715-cos*0.715-sin*0.715)*g+(0.072-cos*0.072+sin*0.928)*b,0,255);
+    var ng=clamp((0.213-cos*0.213+sin*0.143)*r+(0.715+cos*0.285+sin*0.140)*g+(0.072-cos*0.072-sin*0.283)*b,0,255);
+    var nb=clamp((0.213-cos*0.213-sin*0.787)*r+(0.715-cos*0.715+sin*0.715)*g+(0.072+cos*0.928+sin*0.072)*b,0,255);
+    r=nr;g=ng;b=nb;
+    // brightness
+    r=clamp(r*filters[2]/100,0,255);g=clamp(g*filters[2]/100,0,255);b=clamp(b*filters[2]/100,0,255);
+    // contrast
+    r=clamp(filters[3]/100*(r-128)+128,0,255);g=clamp(filters[3]/100*(g-128)+128,0,255);b=clamp(filters[3]/100*(b-128)+128,0,255);
+    return [r,g,b];
+  }
+  function loss(filters){
+    var c=applyFilter(filters);
+    return Math.sqrt((c[0]-r)**2+(c[1]-g)**2+(c[2]-b)**2);
+  }
+  // Initial guess via HSL
+  var maxC=Math.max(r,g,b),minC=Math.min(r,g,b),delta=maxC-minC;
+  var hl=(maxC+minC)/2/255*100;
+  var hs=delta===0?0:delta/(255-Math.abs(2*hl/100*255-255))/255*100;
+  var hh=0;
+  if(delta!==0){if(maxC===r)hh=((g-b)/delta%6)*60;else if(maxC===g)hh=((b-r)/delta+2)*60;else hh=((r-g)/delta+4)*60;}
+  if(hh<0)hh+=360;
+  // filters: [saturate, hue-rotate, brightness, contrast]
+  var best=[hs*10, hh, hl*2, 100], bestLoss=loss(best);
+  // Quick refinement
+  for(var i=0;i<500;i++){
+    var idx=i%4;
+    var step=[50,30,20,10][Math.floor(i/125)];
+    for(var d=-1;d<=1;d+=2){
+      var t=best.slice();t[idx]+=d*step;
+      if(t[0]<0)t[0]=0;if(t[2]<0)t[2]=0;if(t[3]<0)t[3]=0;
+      var l2=loss(t);if(l2<bestLoss){bestLoss=l2;best=t;}
     }
   }
-  h = Math.round(h * 360);
-  s = Math.round(s * 100);
-  l = Math.round(l * 100);
-  // Build filter: start from black, apply sepia+saturate+hue-rotate+brightness+lightness
-  var saturate = Math.round(s * 10);
-  var brightness = Math.round(l * 2);
-  return 'invert(1) sepia(1) saturate(' + saturate + '%) hue-rotate(' + h + 'deg) brightness(' + brightness + '%)';
+  return 'invert(1) sepia(1) saturate('+Math.round(best[0])+'%) hue-rotate('+Math.round(best[1])+'deg) brightness('+Math.round(best[2])+'%) contrast('+Math.round(best[3])+'%)';
 }
 
 // ── PAPER CONFIG ─────────────────────────────────────
@@ -577,17 +613,6 @@ function toggleCameo(checked) {
   renderPreview();
 }
 
-function getSpriteUrl(pokemonName) {
-  if (!pokemonName) return '';
-  var slug = pokemonName.toLowerCase()
-    .replace(/['''.]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/♀/g, '-f')
-    .replace(/♂/g, '-m')
-    .replace(/[^a-z0-9-]/g, '');
-  return 'https://img.pokemondb.net/sprites/scarlet-violet/normal/' + slug + '.png';
-}
-
 function toggleSerials(checked) {
   includeSerials = checked;
   if (!checked) {
@@ -645,7 +670,7 @@ function cardsForPokemon(setName) {
 }
 
 function toggleCardCollapse(cardId, e) {
-  if (e && e.target && e.target.classList.contains('remove-btn')) return;
+  if (e && e.target && (e.target.classList.contains('remove-btn'))) return;
   var form = document.getElementById('form-' + cardId);
   if (!form) return;
   var isCollapsed = form.classList.toggle('collapsed');
@@ -745,6 +770,22 @@ function removeCard(id) {
   renderPreview();
 }
 
+function duplicateCard(id) {
+  var c = cards.find(function(c) { return c.id === id; });
+  if (!c) return;
+  cards.push({
+    id:              ++cardIdCtr,
+    name:            c.name,
+    num:             c.num,
+    set:             c.set,
+    variants:        c.variants.slice(),
+    specialVariants: c.specialVariants.slice(),
+    cardKey:         c.cardKey,
+  });
+  renderForms();
+  renderPreview();
+}
+
 
 function toggleVariant(btn, variant) {
   var id = parseInt(btn.closest('.card-form').dataset.cardid);
@@ -771,8 +812,49 @@ function toggleSpecialVariant(btn, variant) {
 
 function clearAll() {
   cards = [];
+  localStorage.removeItem('gmState');
   renderForms();
   renderPreview();
+}
+
+function saveState() {
+  try {
+    var state = {
+      cards:             cards,
+      pokemonFilter:     pokemonFilter,
+      includeCameo:      includeCameo,
+      includeSerials:    includeSerials,
+      printColor:        printColor,
+      currentPaper:      currentPaper,
+      currentBorderType: currentBorderType,
+      cardIdCtr:         cardIdCtr,
+    };
+    localStorage.setItem('gmState', JSON.stringify(state));
+  } catch(e) { /* storage unavailable */ }
+}
+
+function restoreState() {
+  try {
+    var raw = localStorage.getItem('gmState');
+    if (!raw) return false;
+    var state = JSON.parse(raw);
+    cards             = state.cards             || [];
+    pokemonFilter     = state.pokemonFilter     || '';
+    includeCameo      = !!state.includeCameo;
+    includeSerials    = !!state.includeSerials;
+    printColor        = !!state.printColor;
+    currentPaper      = state.currentPaper      || 'Letter-L';
+    currentBorderType = state.currentBorderType || 'dots';
+    cardIdCtr         = state.cardIdCtr         || cards.length;
+    // Sync UI controls
+    var paperSel  = document.getElementById('paper-select');
+    var colorSel  = document.getElementById('color-select');
+    var borderSel = document.getElementById('border-select');
+    if (paperSel)  paperSel.value  = currentPaper;
+    if (colorSel)  colorSel.value  = printColor ? 'color' : 'bw';
+    if (borderSel) borderSel.value = currentBorderType;
+    return true;
+  } catch(e) { return false; }
 }
 
 // ── FORMS ────────────────────────────────────────────
@@ -1069,8 +1151,7 @@ function renderForms() {
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
     pf.innerHTML = '<div style="margin-bottom:8px;">'
-      + '<div style="display:flex;align-items:center;gap:8px;">'
-      + '<div class="card-picker" id="poke-picker-wrap" style="flex:1;">'
+      + '<div class="card-picker" id="poke-picker-wrap">'
       + '<input type="text" class="card-picker-input"'
       + ' id="poke-picker-input-global"'
       + ' placeholder="Pokémon Species"'
@@ -1086,18 +1167,7 @@ function renderForms() {
       + '<div class="card-picker-dropdown" id="poke-picker-drop-global">'
       + buildPokemonOptions('')
       + '</div></div>'
-      + (function() {
-          if (!pokemonFilter) return '<div style="width:56px;flex-shrink:0;"></div>';
-          var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-          var pName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
-          return '<img src="' + getSpriteUrl(pName) + '" alt="' + esc(pName) + '"'
-            + ' style="width:56px;height:56px;object-fit:contain;flex-shrink:0;"'
-            + ' onerror="this.src=\'https://img.pokemondb.net/sprites/scarlet-violet/normal/miltank.png\'"/>';
-        }())
-      + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">'
-      + '<div>'
-      + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;padding-left:8px;">'
+      + '<label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.7rem;color:var(--muted);cursor:pointer;padding-left:8px;">'
       + '<input type="checkbox" id="cameo-checkbox"'
       + (includeCameo ? ' checked' : '')
       + ' onchange="toggleCameo(this.checked)" style="width:auto;"/>'
@@ -1107,8 +1177,6 @@ function renderForms() {
       + (includeSerials ? ' checked' : '')
       + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
       + 'Include EX Serial Numbers</label>'
-      + '</div>'
-      + '</div>'
       + '</div>';
   }
 
@@ -1199,7 +1267,10 @@ function renderForms() {
       +     '<span style="color:var(--accent);">Card #' + (idx + 1) + '</span>'
       +     (function(){ if (!card.name) return ''; var scd = SET_CARD_DATA[card.set]; var fullNum = scd && card.cardKey >= 0 && scd[card.cardKey] ? scd[card.cardKey].num : ''; return '<span style="color:var(--muted);margin-left:6px;">' + esc(card.name) + '</span>' + (fullNum ? '<span style="color:var(--muted);margin-left:4px;font-size:.85em;"> - ' + esc(fullNum) + '</span>' : ''); }())
       +   '</span>'
+      +   '<span style="display:flex;align-items:center;gap:2px;">'
+      +   '<button class="remove-btn" onclick="duplicateCard(' + card.id + ')" title="Duplicate" style="color:var(--muted);">⧉</button>'
       +   '<button class="remove-btn" onclick="removeCard(' + card.id + ')">&#x2715;</button>'
+      +   '</span>'
       + '</div>'
       + '<div class="card-form-body">'
       // set — searchable picker
@@ -1455,6 +1526,7 @@ function renderPreview() {
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
   applyLastScale();
   requestAnimationFrame(scalePages);
+  saveState();
 }
 
 // ── UTILS ────────────────────────────────────────────
@@ -1680,7 +1752,8 @@ async function loadData() {
 
     clearTimeout(timeoutId);
     hideLoadingScreen();
-    setPaper('Letter-L');
+    restoreState();
+    setPaper(currentPaper);
     renderForms();
     renderPreview();
 
@@ -1706,7 +1779,8 @@ function loadFallbackData() {
   POKEMON_LIST  = ['MissingNo.'];
   BASE_SET_CARDS = SET_CARD_DATA['MissingSet'];
   hideLoadingScreen();
-  setPaper('Letter-L');
+  restoreState();
+  setPaper(currentPaper);
   renderForms();
   renderPreview();
 }
