@@ -125,9 +125,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 /* Dots mode: hide the border, show corner dots */
 .border-dots .card-slot   { border: 1px solid transparent; margin: -1px; }
 
-/* Suppress the old ::before pseudo-element entirely */
-.card-slot::before { display: none !important; }
-
 /* Corner dot spans injected by JS */
 .corner-dot {
   position: absolute;
@@ -320,8 +317,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   </div>
 </div>
 
-<!-- Miltank Easter Egg Player -->
-
 <div class="app-container">
 <div id="loading-screen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);">
   <div style="text-align:center;padding:40px;">
@@ -394,8 +389,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   <div id="preview">
     <div class="preview-top">
       <h2>PREVIEW <span id="pg-label" style="font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.62rem;color:var(--muted);font-weight:400;margin-left:10px;"></span></h2>
-      <div class="preview-actions">
-      </div>
     </div>
     <div id="pages-container">
       <div class="empty-state" id="empty-state">
@@ -425,6 +418,20 @@ function getSymbolUrl(setName) {
   var symbol = info && info.symbol ? info.symbol : 'Base_Set.png';
   if (symbol.indexOf('http') === 0 || symbol.indexOf('//') === 0) return symbol;
   return 'symbols/' + symbol;
+}
+
+// Returns the card object with the given id, or undefined.
+function findCard(id) {
+  return findCard(id);
+}
+
+// Returns the display string for the currently selected Pokémon filter.
+function pokemonDisplayValue() {
+  if (!pokemonFilter) return 'Pokémon Species';
+  var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
+  return (dexIdx >= 0 && POKEMON_LIST[dexIdx])
+    ? pokemonFilter + ' - ' + POKEMON_LIST[dexIdx]
+    : pokemonFilter;
 }
 
 
@@ -504,12 +511,7 @@ function closePokemonPicker() {
   var input = document.getElementById('poke-picker-input-global');
   if (drop) drop.classList.remove('open');
   if (input) {
-    var displayVal = 'Pokémon Species';
-    if (pokemonFilter) {
-      var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-      displayVal = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? pokemonFilter + ' - ' + POKEMON_LIST[dexIdx] : pokemonFilter;
-    }
-    input.value = displayVal;
+    input.value = pokemonDisplayValue();
     input.setAttribute('readonly', '');
   }
 }
@@ -572,26 +574,14 @@ function applyPokemonChange(newFilter) {
       }
     }
   });
-  // Close picker and update its display value to reflect new selection
-  activePokemonPickerId = null;
-  var drop  = document.getElementById('poke-picker-drop-global');
-  var input = document.getElementById('poke-picker-input-global');
-  if (drop) drop.classList.remove('open');
-  if (input) {
-    var displayVal = 'Pokémon Species';
-    if (pokemonFilter) {
-      var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-      displayVal = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? pokemonFilter + ' - ' + POKEMON_LIST[dexIdx] : pokemonFilter;
-    }
-    input.value = displayVal;
-    input.setAttribute('readonly', '');
-  }
-  renderForms();
-  renderPreview();
+  closePokemonPicker();
+  render();
 }
 
-function pokemonPickerKeydown(e) {
-  var drop = document.getElementById('poke-picker-drop-global');
+// Shared arrow-key/enter/escape navigation for all dropdown pickers.
+// onEnter(highlighted) is called when Enter is pressed on the highlighted option.
+// onEscape() is called when Escape is pressed.
+function pickerKeyNav(e, drop, onEnter, onEscape) {
   if (!drop || !drop.classList.contains('open')) return;
   var opts = drop.querySelectorAll('.card-picker-option:not(.no-results)');
   var highlighted = drop.querySelector('.card-picker-option.highlighted');
@@ -609,16 +599,39 @@ function pokemonPickerKeydown(e) {
     if (opts[prev]) { opts[prev].classList.add('highlighted'); opts[prev].scrollIntoView({block:'nearest'}); }
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (highlighted) pickPokemon(e, highlighted.dataset.pokemon);
+    if (highlighted) onEnter(highlighted);
   } else if (e.key === 'Escape') {
-    closePokemonPicker();
+    onEscape();
   }
+}
+
+function pokemonPickerKeydown(e) {
+  pickerKeyNav(e,
+    document.getElementById('poke-picker-drop-global'),
+    function(h) { pickPokemon(e, h.dataset.pokemon); },
+    closePokemonPicker
+  );
+}
+
+function cardPickerKeydown(e, cardId) {
+  pickerKeyNav(e,
+    document.getElementById('picker-drop-' + cardId),
+    function(h) { pickCard(e, cardId, parseInt(h.dataset.idx)); },
+    function() { closeCardPicker(cardId); }
+  );
+}
+
+function setPickerKeydown(e, cardId) {
+  pickerKeyNav(e,
+    document.getElementById('set-picker-drop-' + cardId),
+    function(h) { pickSet(e, cardId, h.dataset.set); },
+    function() { closeSetPicker(cardId); }
+  );
 }
 
 function toggleCameo(checked) {
   includeCameo = checked;
-  renderForms();
-  renderPreview();
+  render();
 }
 
 function toggleSerials(checked) {
@@ -640,8 +653,7 @@ function toggleSerials(checked) {
       }
     });
   }
-  renderForms();
-  renderPreview();
+  render();
 }
 
 function matchesPokemonFilter(card) {
@@ -703,8 +715,7 @@ function toggleSettings() {
 
 function logoEasterEgg() {
   if (!pokemonFilter) return;
-  var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-  var name = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : '';
+  var name = pokemonDisplayValue().split(' - ')[1] || '';
   if (name.toLowerCase() !== 'miltank') return;
   if (miltankPlaying) { stopMiltankPlayer(); return; }
   startMiltankPlayer();
@@ -722,18 +733,30 @@ function startMiltankPlayer() {
   }
   _miltankAudio.volume = miltankVolume / 100;
   _miltankAudio.play();
-  renderForms();
+  renderForms(); // only sidebar needs updating — no preview change
 }
 
 function stopMiltankPlayer() {
   miltankPlaying = false;
   if (_miltankAudio) { _miltankAudio.pause(); _miltankAudio.currentTime = 0; }
-  renderForms();
+  renderForms(); // only sidebar needs updating — no preview change
 }
 
 function setMiltankVolume(val) {
   miltankVolume = parseInt(val, 10);
   if (_miltankAudio) _miltankAudio.volume = miltankVolume / 100;
+}
+
+function render() {
+  renderForms();
+  renderPreview();
+}
+
+function initApp() {
+  hideLoadingScreen();
+  restoreState();
+  setPaper(currentPaper); // sets print CSS and renders preview
+  renderForms();           // render sidebar (setPaper only does preview)
 }
 
 function setPaper(name) {
@@ -746,22 +769,22 @@ function setPaper(name) {
 }
 
 // ── GENERIC INPUT HANDLER ────────────────────────────
-document.addEventListener('input',  function(e) { handleFieldEvent(e); });
-document.addEventListener('change', function(e) { handleFieldEvent(e); });
+document.addEventListener('input', function(e) { handleFieldEvent(e); });
 
 function handleFieldEvent(e) {
   var el    = e.target;
   var id    = parseInt(el.dataset.id);
   var field = el.dataset.field;
   if (!id || !field) return;
-  var c = cards.find(function(c) { return c.id === id; });
+  var c = findCard(id);
   if (!c) return;
   c[field] = el.value;
   if (field === 'set') {
     c.variants  = [];
     c.cardKey   = -1;
     c.name      = '';
-    renderForms();
+    render();
+    return;
   }
   renderPreview();
 }
@@ -796,18 +819,17 @@ function addCard(data) {
     }
   }
   cards.push(newCard);
-  renderForms();
-  renderPreview();
+  render();
 }
 
 function removeCard(id) {
   cards = cards.filter(function(c) { return c.id !== id; });
-  renderForms();
-  renderPreview();
+  delete collapsedIds[id];
+  render();
 }
 
 function duplicateCard(id) {
-  var c = cards.find(function(c) { return c.id === id; });
+  var c = findCard(id);
   if (!c) return;
   cards.push({
     id:              ++cardIdCtr,
@@ -818,14 +840,13 @@ function duplicateCard(id) {
     specialVariants: c.specialVariants.slice(),
     cardKey:         c.cardKey,
   });
-  renderForms();
-  renderPreview();
+  render();
 }
 
 
 function toggleVariant(btn, variant) {
   var id = parseInt(btn.closest('.card-form').dataset.cardid);
-  var c = cards.find(function(c) { return c.id === id; });
+  var c = findCard(id);
   if (!c) return;
   if (!c.variants) c.variants = [];
   var idx = c.variants.indexOf(variant);
@@ -837,7 +858,7 @@ function toggleVariant(btn, variant) {
 
 function toggleSpecialVariant(btn, variant) {
   var id = parseInt(btn.closest('.card-form').dataset.cardid);
-  var c = cards.find(function(c) { return c.id === id; });
+  var c = findCard(id);
   if (!c) return;
   if (!c.specialVariants) c.specialVariants = [];
   var idx = c.specialVariants.indexOf(variant);
@@ -874,8 +895,7 @@ function confirmClearAll() {
 function clearAll() {
   cards = [];
   localStorage.removeItem('gmState');
-  renderForms();
-  renderPreview();
+  render();
 }
 
 function confirmFillAllCards() {
@@ -929,8 +949,7 @@ function fillAllCards() {
       });
     });
   });
-  renderForms();
-  renderPreview();
+  render();
 }
 function saveState() {
   try {
@@ -1016,7 +1035,7 @@ function openCardPicker(cardId) {
   var drop  = document.getElementById('picker-drop-'  + cardId);
   var input = document.getElementById('picker-input-' + cardId);
   if (!drop || !input) return;
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   activePickerId = cardId;
   input.removeAttribute('readonly');
   input.value = '';
@@ -1035,12 +1054,12 @@ function closeCardPicker(cardId) {
   var drop = document.getElementById('picker-drop-' + cardId);
   if (drop) drop.classList.remove('open');
   // Restore input value to selected card name and make readonly again
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   var input = document.getElementById('picker-input-' + cardId);
   if (input && c) {
-    var sc2 = SET_CARD_DATA[c.set];
-    input.value = c.cardKey >= 0 && sc2 && sc2[c.cardKey]
-      ? sc2[c.cardKey].num + ' — ' + sc2[c.cardKey].name
+    var scd = SET_CARD_DATA[c.set];
+    input.value = c.cardKey >= 0 && scd && scd[c.cardKey]
+      ? scd[c.cardKey].num + ' — ' + scd[c.cardKey].name
       : '';
     input.setAttribute('readonly', '');
   }
@@ -1048,7 +1067,7 @@ function closeCardPicker(cardId) {
 
 function filterCardPicker(cardId, value) {
   var drop = document.getElementById('picker-drop-' + cardId);
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   if (!drop) return;
   drop.innerHTML = buildPickerOptions(c ? c.cardKey : -1, value, c ? c.set : '').replace(/__CARDID__/g, cardId);
   drop.classList.add('open');
@@ -1056,11 +1075,11 @@ function filterCardPicker(cardId, value) {
 
 function pickCard(e, cardId, idx) {
   e.preventDefault();
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   if (!c) return;
   if (c.cardKey === idx) { closeCardPicker(cardId); return; }
-  var sc3 = SET_CARD_DATA[c.set] || [];
-  var bc = sc3[idx];
+  var scd = SET_CARD_DATA[c.set] || [];
+  var bc = scd[idx];
   if (!bc) return;
   c.cardKey  = idx;
   c.name     = bc.name;
@@ -1068,36 +1087,7 @@ function pickCard(e, cardId, idx) {
   c.variants = [];
   c.specialVariants = [];
   closeCardPicker(cardId);
-  renderForms();
-  renderPreview();
-}
-
-function cardPickerKeydown(e, cardId) {
-  var drop = document.getElementById('picker-drop-' + cardId);
-  if (!drop || !drop.classList.contains('open')) return;
-  var opts = drop.querySelectorAll('.card-picker-option:not(.no-results)');
-  var highlighted = drop.querySelector('.card-picker-option.highlighted');
-  var idx = -1;
-  opts.forEach(function(o, i) { if (o === highlighted) idx = i; });
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    var next = idx < opts.length - 1 ? idx + 1 : 0;
-    if (highlighted) highlighted.classList.remove('highlighted');
-    if (opts[next]) { opts[next].classList.add('highlighted'); opts[next].scrollIntoView({block:'nearest'}); }
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    var prev = idx > 0 ? idx - 1 : opts.length - 1;
-    if (highlighted) highlighted.classList.remove('highlighted');
-    if (opts[prev]) { opts[prev].classList.add('highlighted'); opts[prev].scrollIntoView({block:'nearest'}); }
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (highlighted) {
-      var dataIdx = parseInt(highlighted.dataset.idx);
-      pickCard(e, cardId, dataIdx);
-    }
-  } else if (e.key === 'Escape') {
-    closeCardPicker(cardId);
-  }
+  render();
 }
 
 var activeSetPickerId = null;
@@ -1136,7 +1126,7 @@ function openSetPicker(cardId) {
   var drop  = document.getElementById('set-picker-drop-'  + cardId);
   var input = document.getElementById('set-picker-input-' + cardId);
   if (!drop || !input) return;
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   activeSetPickerId = cardId;
   input.removeAttribute('readonly');
   input.value = '';
@@ -1154,13 +1144,13 @@ function closeSetPicker(cardId) {
   var drop  = document.getElementById('set-picker-drop-'  + cardId);
   var input = document.getElementById('set-picker-input-' + cardId);
   if (drop) drop.classList.remove('open');
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   if (input && c) { input.value = c.set || ''; input.setAttribute('readonly', ''); }
 }
 
 function filterSetPicker(cardId, value) {
   var drop = document.getElementById('set-picker-drop-' + cardId);
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   if (!drop) return;
   drop.innerHTML = buildSetOptions(c ? c.set : '', value).replace(/__SETID__/g, cardId);
   drop.classList.add('open');
@@ -1173,7 +1163,7 @@ function setOptionMousedown(e, cardId) {
 
 function pickSet(e, cardId, setName) {
   e.preventDefault();
-  var c = cards.find(function(c) { return c.id === cardId; });
+  var c = findCard(cardId);
   if (!c) return;
   if (c.set === setName) { closeSetPicker(cardId); return; }
   c.set     = setName;
@@ -1186,40 +1176,12 @@ function pickSet(e, cardId, setName) {
   if (availableCards && availableCards.length === 1) {
     var allCards = SET_CARD_DATA[setName] || [];
     var bc = availableCards[0];
-    var idx = allCards.indexOf(bc);
-    c.cardKey = idx;
+    c.cardKey = allCards.indexOf(bc);
     c.name    = bc.name;
     c.num     = bc.num || '';
-    c.variants = [];
   }
   closeSetPicker(cardId);
-  renderForms();
-  renderPreview();
-}
-
-function setPickerKeydown(e, cardId) {
-  var drop = document.getElementById('set-picker-drop-' + cardId);
-  if (!drop || !drop.classList.contains('open')) return;
-  var opts = drop.querySelectorAll('.card-picker-option:not(.no-results)');
-  var highlighted = drop.querySelector('.card-picker-option.highlighted');
-  var idx = -1;
-  opts.forEach(function(o, i) { if (o === highlighted) idx = i; });
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    var next = idx < opts.length - 1 ? idx + 1 : 0;
-    if (highlighted) highlighted.classList.remove('highlighted');
-    if (opts[next]) { opts[next].classList.add('highlighted'); opts[next].scrollIntoView({block:'nearest'}); }
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    var prev = idx > 0 ? idx - 1 : opts.length - 1;
-    if (highlighted) highlighted.classList.remove('highlighted');
-    if (opts[prev]) { opts[prev].classList.add('highlighted'); opts[prev].scrollIntoView({block:'nearest'}); }
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (highlighted) pickSet(e, cardId, highlighted.dataset.set);
-  } else if (e.key === 'Escape') {
-    closeSetPicker(cardId);
-  }
+  render();
 }
 
 function renderForms() {
@@ -1249,11 +1211,7 @@ function renderForms() {
       + '<input type="text" class="card-picker-input"'
       + ' id="poke-picker-input-global"'
       + ' placeholder="Pokémon Species"'
-      + ' value="' + esc((function() {
-          if (!pokemonFilter) return 'Pokémon Species';
-          var dexIdx = parseInt(pokemonFilter.replace('#', ''), 10) - 1;
-          return (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? pokemonFilter + ' - ' + POKEMON_LIST[dexIdx] : pokemonFilter;
-        })()) + '"'
+      + ' value="' + esc(pokemonDisplayValue()) + '"'
       + ' autocomplete="off" readonly'
       + ' onmousedown="openPokemonPickerMousedown(event)"'
       + ' oninput="filterPokemonPicker(this.value)"'
@@ -1272,10 +1230,15 @@ function renderForms() {
       + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
       + 'Include EX Serial Numbers</label>'
       + (pokemonFilter
-        ? '<button class="btn btn-ghost" style="margin-top:10px;font-size:.65rem;gap:5px;" onclick="confirmFillAllCards()">'
+        ? '<div style="display:flex;gap:6px;margin-top:10px;">'
+          + '<button class="btn btn-ghost" style="font-size:.65rem;gap:5px;" onclick="confirmFillAllCards()">'
           + '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
           + 'Fill All Cards for This Pokémon'
           + '</button>'
+          + '<button class="btn btn-danger" style="font-size:.65rem;flex-shrink:0;width:auto;padding:10px 12px;" onclick="showClearConfirmModal()">'
+          + 'Clear All'
+          + '</button>'
+          + '</div>'
         : '')
       + '</div>';
   }
@@ -1286,75 +1249,42 @@ function renderForms() {
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
     var noCard   = !!scd && !scCard;
 
-    // Standard Variants selector — multi-select pills
-    var variantHTML = '';
+    // Build pill HTML for a set of variant options
+    function buildPillsHTML(options, selected, toggleFn) {
+      if (!options.length) return '';
+      return '<div class="ctrl" style="margin-top:10px;"><div class="edition-pills">'
+        + options.map(function(v) {
+            var isSel = selected.indexOf(v) !== -1;
+            return '<button class="edition-pill' + (isSel ? ' selected' : '')
+              + '" data-variant="' + esc(v) + '" onclick="' + toggleFn + '(this,this.dataset.variant)">'
+              + esc(v) + '</button>';
+          }).join('')
+        + '</div></div>';
+    }
+
+    // Standard Variants
     var variantOptions = [];
     if (scd && card.cardKey >= 0 && scd[card.cardKey]) {
-      var cardVariants = scd[card.cardKey].variants;
-      if (Array.isArray(cardVariants) && cardVariants.length >= 1) {
-        variantOptions = cardVariants.slice(); // copy so we don't mutate sheet data
+      var cardData = scd[card.cardKey];
+      if (Array.isArray(cardData.variants) && cardData.variants.length) {
+        variantOptions = cardData.variants.slice();
       }
-      // If Include EX Serial Numbers is checked, remove Non-Holo and prepend serial variants
       if (includeSerials) {
-        var cardSerials = scd[card.cardKey].serialVariants || [];
-        if (cardSerials.length > 0) {
+        var cardSerials = cardData.serialVariants || [];
+        if (cardSerials.length) {
           variantOptions = variantOptions.filter(function(v) { return v !== 'Non-Holo'; });
           variantOptions = cardSerials.concat(variantOptions);
         }
       }
     }
-    if (variantOptions.length === 1) {
-      var cardVariants1 = card.variants || [];
-      variantHTML = '<div class="ctrl" style="margin-top:10px;">'
-        + '<div class="edition-pills">'
-        + '<button class="edition-pill' + (cardVariants1.indexOf(variantOptions[0]) !== -1 ? ' selected' : '') + '"'
-        + ' data-variant="' + esc(variantOptions[0]) + '"'
-        + ' onclick="toggleVariant(this, this.dataset.variant)">'
-        + esc(variantOptions[0]) + '</button>'
-        + '</div></div>';
-    } else if (variantOptions.length > 1) {
-      var cardVariants = card.variants || [];
-      variantHTML = '<div class="ctrl" style="margin-top:10px;">'
-        + '<div class="edition-pills">'
-        + variantOptions.map(function(p) {
-            var isSel = cardVariants.indexOf(p) !== -1;
-            return '<button class="edition-pill' + (isSel ? ' selected' : '')
-              + '" data-variant="' + esc(p) + '" onclick="toggleVariant(this,this.dataset.variant)">'
-              + esc(p) + '</button>';
-          }).join('')
-        + '</div></div>';
-    }
+    var variantHTML = buildPillsHTML(variantOptions, card.variants || [], 'toggleVariant');
 
-    // Special Variants selector — same style, only shown if data exists
-    var specialVariantHTML = '';
+    // Special Variants
     var specialVarOptions = [];
-    if (scd && card.cardKey >= 0 && scd[card.cardKey]) {
-      var cardSpecialData = scd[card.cardKey].specialVariants;
-      if (Array.isArray(cardSpecialData) && cardSpecialData.length >= 1) {
-        specialVarOptions = cardSpecialData;
-      }
+    if (scd && card.cardKey >= 0 && scd[card.cardKey] && Array.isArray(scd[card.cardKey].specialVariants)) {
+      specialVarOptions = scd[card.cardKey].specialVariants;
     }
-    if (specialVarOptions.length === 1) {
-      var cardSpecialSel1 = card.specialVariants || [];
-      specialVariantHTML = '<div class="ctrl" style="margin-top:10px;">'
-        + '<div class="edition-pills">'
-        + '<button class="edition-pill' + (cardSpecialSel1.indexOf(specialVarOptions[0]) !== -1 ? ' selected' : '') + '"'
-        + ' data-variant="' + esc(specialVarOptions[0]) + '"'
-        + ' onclick="toggleSpecialVariant(this, this.dataset.variant)">'
-        + esc(specialVarOptions[0]) + '</button>'
-        + '</div></div>';
-    } else if (specialVarOptions.length > 1) {
-      var cardSpecialSel = card.specialVariants || [];
-      specialVariantHTML = '<div class="ctrl" style="margin-top:10px;">'
-        + '<div class="edition-pills">'
-        + specialVarOptions.map(function(p) {
-            var isSel = cardSpecialSel.indexOf(p) !== -1;
-            return '<button class="edition-pill' + (isSel ? ' selected' : '')
-              + '" data-variant="' + esc(p) + '" onclick="toggleSpecialVariant(this,this.dataset.variant)">'
-              + esc(p) + '</button>';
-          }).join('')
-        + '</div></div>';
-    }
+    var specialVariantHTML = buildPillsHTML(specialVarOptions, card.specialVariants || [], 'toggleSpecialVariant');
 
     return '<div class="card-form" id="form-' + card.id + '" data-cardid="' + card.id + '">'
       // header
@@ -1408,7 +1338,7 @@ function renderForms() {
       + (!noCard ? specialVariantHTML : '')
       + (function() {
           // Show warning if card is selected but no variant or special variant is chosen
-          if (noCard || !scCard) return '';
+          if (!scCard) return '';
           var hasVariants = variantOptions.length > 0;
           var hasSpecial  = specialVarOptions.length > 0;
           if (!hasVariants && !hasSpecial) return ''; // card has no variant data at all — no warning needed
@@ -1429,6 +1359,21 @@ function renderForms() {
 }
 
 // ── PREVIEW ──────────────────────────────────────────
+
+// Returns the total number of variant options for a card across all types.
+// Used to decide whether to show variant labels on preview slots.
+function getTotalVariantCount(card) {
+  var sclR = SET_CARD_DATA[card.set];
+  if (!sclR || card.cardKey < 0 || !sclR[card.cardKey]) return 0;
+  var cdR = sclR[card.cardKey];
+  var stdVars = Array.isArray(cdR.variants) ? cdR.variants.slice() : [];
+  if (includeSerials && Array.isArray(cdR.serialVariants) && cdR.serialVariants.length) {
+    stdVars = stdVars.filter(function(v) { return v !== 'Non-Holo'; });
+    stdVars = cdR.serialVariants.concat(stdVars);
+  }
+  var specVars = Array.isArray(cdR.specialVariants) ? cdR.specialVariants : [];
+  return stdVars.length + specVars.length;
+}
 
 var _lastScale = 1;
 var _lastScaledW = 0;
@@ -1488,55 +1433,8 @@ function renderPreview() {
   var pageHpx  = Math.round(p.pageH  * DPI);
   var marginPx = Math.round(p.margin * DPI);
 
-  // Expand cards by variant combinations
-  var slots = [];
-  for (var ci = 0; ci < cards.length; ci++) {
-    var cd = cards[ci];
-    // Determine variant options for this card
-    var variantOpts = [];
-    var hasVariantData = false;
-    var sclP = SET_CARD_DATA[cd.set];
-    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
-      var cdVariants = sclP[cd.cardKey].variants;
-      if (Array.isArray(cdVariants) && cdVariants.length >= 1) { variantOpts = cdVariants.slice(); hasVariantData = true; }
-      // Mirror the same serial substitution applied in renderForms
-      if (includeSerials) {
-        var cdSerials = sclP[cd.cardKey].serialVariants || [];
-        if (cdSerials.length > 0) {
-          variantOpts = variantOpts.filter(function(v) { return v !== 'Non-Holo'; });
-          variantOpts = cdSerials.concat(variantOpts);
-        }
-      }
-    }
-    // Compute special variants first so we can use them in the prOk guard
-    var specialOpts = [];
-    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
-      var cdSpecialData = sclP[cd.cardKey].specialVariants;
-      if (Array.isArray(cdSpecialData) && cdSpecialData.length >= 1) specialOpts = cdSpecialData;
-    }
-
-    var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
-    // Only render a blank standard slot if there's no variant data AND no special variants —
-    // cards with only special variants should not get an extra blank standard slot.
-    var hasPrOnly1  = !hasVariantData && specialOpts.length === 0;
-    var hasPr1Sel   = variantOpts.length === 1 && cd.variants && cd.variants.length > 0;
-    var prOk        = hasPrOnly1 || hasPr1Sel || hasPrChoice;
-    if (prOk) {
-      // Generate slots with actual variant name (not null) so renderSlot can show the label when needed
-      var visibleSelected = variantOpts.length > 1 && cd.variants && cd.variants.length
-        ? cd.variants.filter(function(v) { return variantOpts.indexOf(v) !== -1; })
-        : variantOpts.length === 1 ? [variantOpts[0]] : [null];
-      visibleSelected.forEach(function(variant) {
-        slots.push({ card: cd, variant: variant, specialVariant: null });
-      });
-    }
-    var selSpecialVariants = specialOpts.length > 0 && cd.specialVariants && cd.specialVariants.length ? cd.specialVariants : [];
-    selSpecialVariants.forEach(function(sh) {
-      slots.push({ card: cd, variant: null, specialVariant: sh });
-    });
-  }
-  // Update card count badge to reflect total preview slots
-  
+  // Expand cards into individual variant slots
+  var slots = buildSlots();
 
   // If no slots, show empty page grid and return
   if (slots.length === 0) {
@@ -1556,57 +1454,11 @@ function renderPreview() {
     return;
   }
 
-  // Chunk slots into pages
   var chunks = [];
   for (var i = 0; i < slots.length; i += perPage) {
     var chunk = slots.slice(i, i + perPage);
     while (chunk.length < perPage) chunk.push(null);
     chunks.push(chunk);
-  }
-
-  function renderSlot(card, variantOverride, specialVariantOverride) {
-    if (!card || !card.name || !card.name.trim()) {
-      return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span><div class="empty-slot-label">empty</div></div>';
-    }
-    var sym        = card.set ? getSymbolUrl(card.set) : null;
-    var numDisplay = card.num || null;
-
-    // Count total variants across all types to decide whether to show the label.
-    // If there is only 1 variant in total, the label adds no useful info — suppress it.
-    var totalVariantCount = 0;
-    var sclR = SET_CARD_DATA[card.set];
-    if (sclR && card.cardKey >= 0 && sclR[card.cardKey]) {
-      var cdR = sclR[card.cardKey];
-      var stdVars = Array.isArray(cdR.variants) ? cdR.variants.slice() : [];
-      if (includeSerials && Array.isArray(cdR.serialVariants) && cdR.serialVariants.length > 0) {
-        stdVars = stdVars.filter(function(v) { return v !== 'Non-Holo'; });
-        stdVars = cdR.serialVariants.concat(stdVars);
-      }
-      var specVars = Array.isArray(cdR.specialVariants) ? cdR.specialVariants : [];
-      totalVariantCount = stdVars.length + specVars.length;
-    }
-    var showLabel = totalVariantCount > 1;
-
-    return '<div class="card-slot">'
-      + '<span class="corner-dot tl"></span>'
-      + '<span class="corner-dot tr"></span>'
-      + '<span class="corner-dot bl"></span>'
-      + '<span class="corner-dot br"></span>'
-      + '<div class="cs-inner">'
-      +   '<div class="cs-name">' + esc(card.name) + '</div>'
-      +   (numDisplay
-            ? '<div class="cs-number">' + esc(numDisplay) + '</div>'
-            : '<div class="cs-number blank">\u2014</div>')
-      +   '<div class="cs-symbol-wrap">'
-      +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
-      +   '</div>'
-      +   (card.set
-            ? '<div class="cs-set">' + esc(card.set) + '</div>'
-            : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-      +   (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-      +   (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
-      + '</div>'
-      + '</div>';
   }
 
   container.innerHTML = chunks.map(function(chunk, pi) {
@@ -1623,15 +1475,13 @@ function renderPreview() {
       +     "gap:0;"
       +   '">'
       +   chunk.map(function(slot) {
-            if (!slot) return renderSlot(null, null, null);
-            return renderSlot(slot.card, slot.variant, slot.specialVariant);
+            return buildSlotHTML(slot ? slot.card : null, slot ? slot.variant : null, slot ? slot.specialVariant : null);
           }).join('')
       +   '</div>'
       + '</div></div>';
   }).join('');
 
-
-  var n = slots.filter(function(s) { return s && s.card && s.card.name && s.card.name.trim(); }).length;
+  var n = slots.length;
   document.getElementById('pg-label').textContent =
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
   applyLastScale();
@@ -1642,6 +1492,80 @@ function renderPreview() {
 // ── UTILS ────────────────────────────────────────────
 function esc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Builds the flat list of {card, variant, specialVariant} slots from the cards array.
+// This is shared by renderPreview and the mobile PDF offscreen path.
+function buildSlots() {
+  var slots = [];
+  for (var ci = 0; ci < cards.length; ci++) {
+    var cd = cards[ci];
+    var variantOpts = [];
+    var hasVariantData = false;
+    var sclP = SET_CARD_DATA[cd.set];
+    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
+      var cdData = sclP[cd.cardKey];
+      if (Array.isArray(cdData.variants) && cdData.variants.length) {
+        variantOpts = cdData.variants.slice();
+        hasVariantData = true;
+      }
+      if (includeSerials) {
+        var cdSerials = cdData.serialVariants || [];
+        if (cdSerials.length) {
+          variantOpts = variantOpts.filter(function(v) { return v !== 'Non-Holo'; });
+          variantOpts = cdSerials.concat(variantOpts);
+        }
+      }
+    }
+    var specialOpts = [];
+    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
+      var cdSpecial = sclP[cd.cardKey].specialVariants;
+      if (Array.isArray(cdSpecial) && cdSpecial.length) specialOpts = cdSpecial;
+    }
+    var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
+    var hasPrOnly1  = !hasVariantData && specialOpts.length === 0;
+    var hasPr1Sel   = variantOpts.length === 1 && cd.variants && cd.variants.length > 0;
+    if (hasPrOnly1 || hasPr1Sel || hasPrChoice) {
+      var visibleSelected = variantOpts.length > 1 && cd.variants && cd.variants.length
+        ? cd.variants.filter(function(v) { return variantOpts.indexOf(v) !== -1; })
+        : variantOpts.length === 1 ? [variantOpts[0]] : [null];
+      visibleSelected.forEach(function(variant) {
+        slots.push({ card: cd, variant: variant, specialVariant: null });
+      });
+    }
+    var selSpecials = specialOpts.length && cd.specialVariants && cd.specialVariants.length ? cd.specialVariants : [];
+    selSpecials.forEach(function(sh) {
+      slots.push({ card: cd, variant: null, specialVariant: sh });
+    });
+  }
+  return slots;
+}
+
+// Builds the HTML string for a single card slot.
+// Used by both the live preview renderer and the mobile PDF offscreen builder.
+function buildSlotHTML(card, variantOverride, specialVariantOverride) {
+  var DOTS = '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
+           + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>';
+  if (!card || !card.name || !card.name.trim()) {
+    return '<div class="card-slot empty">' + DOTS + '</div>';
+  }
+  var sym        = card.set ? getSymbolUrl(card.set) : null;
+  var showLabel  = getTotalVariantCount(card) > 1;
+  return '<div class="card-slot">' + DOTS
+    + '<div class="cs-inner">'
+    +   '<div class="cs-name">'   + esc(card.name) + '</div>'
+    +   (card.num
+          ? '<div class="cs-number">' + esc(card.num) + '</div>'
+          : '<div class="cs-number blank">\u2014</div>')
+    +   '<div class="cs-symbol-wrap">'
+    +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
+    +   '</div>'
+    +   (card.set
+          ? '<div class="cs-set">' + esc(card.set) + '</div>'
+          : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
+    +   (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+    +   (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+    + '</div></div>';
 }
 
 // ── SAVE PDF ─────────────────────────────────────────
@@ -1668,80 +1592,13 @@ async function savePDF() {
     var pageHpx2 = Math.round(p2.pageH  * DPI);
     var marginPx2 = Math.round(p2.margin * DPI);
 
-    // Build slots
-    var slots2 = [];
-    for (var ci2 = 0; ci2 < cards.length; ci2++) {
-      var cd2 = cards[ci2];
-      var variantOpts2 = [];
-      var hasVariantData2 = false;
-      var sclP2 = SET_CARD_DATA[cd2.set];
-      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
-        var cdVariants2 = sclP2[cd2.cardKey].variants;
-        if (Array.isArray(cdVariants2) && cdVariants2.length >= 1) { variantOpts2 = cdVariants2.slice(); hasVariantData2 = true; }
-        if (includeSerials) {
-          var cdSerials2 = sclP2[cd2.cardKey].serialVariants || [];
-          if (cdSerials2.length > 0) {
-            variantOpts2 = variantOpts2.filter(function(v) { return v !== 'Non-Holo'; });
-            variantOpts2 = cdSerials2.concat(variantOpts2);
-          }
-        }
-      }
-      var specialOpts2 = [];
-      if (sclP2 && cd2.cardKey >= 0 && sclP2[cd2.cardKey]) {
-        var cdSpecialData2 = sclP2[cd2.cardKey].specialVariants;
-        if (Array.isArray(cdSpecialData2) && cdSpecialData2.length >= 1) specialOpts2 = cdSpecialData2;
-      }
-      var hasPrChoice2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length > 0;
-      var hasPrOnly12  = !hasVariantData2 && specialOpts2.length === 0;
-      var hasPr1Sel2   = variantOpts2.length === 1 && cd2.variants && cd2.variants.length > 0;
-      if (hasPrOnly12 || hasPr1Sel2 || hasPrChoice2) {
-        var visibleSelected2 = variantOpts2.length > 1 && cd2.variants && cd2.variants.length
-          ? cd2.variants.filter(function(v) { return variantOpts2.indexOf(v) !== -1; })
-          : variantOpts2.length === 1 ? [variantOpts2[0]] : [null];
-        visibleSelected2.forEach(function(variant) { slots2.push({ card: cd2, variant: variant, specialVariant: null }); });
-      }
-      var selSpecial2 = specialOpts2.length > 0 && cd2.specialVariants && cd2.specialVariants.length ? cd2.specialVariants : [];
-      selSpecial2.forEach(function(sh) { slots2.push({ card: cd2, variant: null, specialVariant: sh }); });
-    }
-
+    var slots2   = buildSlots();
     var perPage2 = p2.cols * p2.rows;
-    var chunks2 = [];
+    var chunks2  = [];
     for (var i2 = 0; i2 < slots2.length; i2 += perPage2) {
       var chunk2 = slots2.slice(i2, i2 + perPage2);
       while (chunk2.length < perPage2) chunk2.push(null);
       chunks2.push(chunk2);
-    }
-
-    function slotHTML2(card, variantOverride, specialVariantOverride) {
-      if (!card || !card.name || !card.name.trim()) {
-        return '<div class="card-slot empty"><span class="corner-dot tl"></span><span class="corner-dot tr"></span><span class="corner-dot bl"></span><span class="corner-dot br"></span></div>';
-      }
-      var sym2 = card.set ? getSymbolUrl(card.set) : null;
-      var numDisplay2 = card.num || null;
-      var totalVariantCount2 = 0;
-      var sclR2 = SET_CARD_DATA[card.set];
-      if (sclR2 && card.cardKey >= 0 && sclR2[card.cardKey]) {
-        var cdR2 = sclR2[card.cardKey];
-        var stdVars2 = Array.isArray(cdR2.variants) ? cdR2.variants.slice() : [];
-        if (includeSerials && Array.isArray(cdR2.serialVariants) && cdR2.serialVariants.length > 0) {
-          stdVars2 = stdVars2.filter(function(v) { return v !== 'Non-Holo'; });
-          stdVars2 = cdR2.serialVariants.concat(stdVars2);
-        }
-        var specVars2 = Array.isArray(cdR2.specialVariants) ? cdR2.specialVariants : [];
-        totalVariantCount2 = stdVars2.length + specVars2.length;
-      }
-      var showLabel2 = totalVariantCount2 > 1;
-      return '<div class="card-slot">'
-        + '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
-        + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>'
-        + '<div class="cs-inner">'
-        +   '<div class="cs-name">' + esc(card.name) + '</div>'
-        +   (numDisplay2 ? '<div class="cs-number">' + esc(numDisplay2) + '</div>' : '<div class="cs-number blank">\u2014</div>')
-        +   '<div class="cs-symbol-wrap"><img class="cs-symbol" src="' + (sym2 || BLANK_SYMBOL_URI) + '" alt=""/></div>'
-        +   (card.set ? '<div class="cs-set">' + esc(card.set) + '</div>' : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-        +   (showLabel2 && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-        +   (showLabel2 && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
-        + '</div></div>';
     }
 
     // Build off-screen container — positioned off-screen but fully rendered by the browser.
@@ -1757,8 +1614,7 @@ async function savePDF() {
         + 'grid-template-rows:repeat(' + p2.rows + ',' + CARD_H_PX + 'px);'
         + 'gap:0;">'
         + chunk2.map(function(slot) {
-            if (!slot) return slotHTML2(null, null, null);
-            return slotHTML2(slot.card, slot.variant, slot.specialVariant);
+            return buildSlotHTML(slot ? slot.card : null, slot ? slot.variant : null, slot ? slot.specialVariant : null);
           }).join('')
         + '</div>';
       offscreen.appendChild(pageEl);
@@ -1770,18 +1626,12 @@ async function savePDF() {
 
   try {
     var p       = PAPER_DATA[currentPaper];
-    var pageWin = p.pageW;
-    var pageHin = p.pageH;
-    var pageWmm = pageWin * 25.4;
-    var pageHmm = pageHin * 25.4;
+    var pageWmm = p.pageW * 25.4;
+    var pageHmm = p.pageH * 25.4;
+    var orient  = p.pageW > p.pageH ? 'landscape' : 'portrait';
 
     var { jsPDF } = window.jspdf;
-    var doc = new jsPDF({
-      orientation: pageWin > pageHin ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pageWmm, pageHmm],
-      compress: true
-    });
+    var doc = new jsPDF({ orientation: orient, unit: 'mm', format: [pageWmm, pageHmm], compress: true });
 
     // On mobile use the offscreen page wraps; on desktop use the live preview ones
     var pageWraps = offscreen
@@ -1790,8 +1640,7 @@ async function savePDF() {
     if (!pageWraps.length) return;
 
     for (var i = 0; i < pageWraps.length; i++) {
-      if (i > 0) doc.addPage([pageWmm, pageHmm],
-                              pageWin > pageHin ? 'landscape' : 'portrait');
+      if (i > 0) doc.addPage([pageWmm, pageHmm], orient);
 
       var wrap = pageWraps[i];
       var scaleWrap = offscreen ? null : wrap.parentElement; // .page-scale-wrap (desktop only)
@@ -1951,10 +1800,7 @@ async function loadData() {
   // If no URLs configured, use hardcoded fallback data and just init
   if (!CONFIG.CARDS_SHEET_URL || CONFIG.CARDS_SHEET_URL === 'YOUR_CARDS_SHEET_CSV_URL_HERE') {
     console.warn('Google Sheets URLs not configured — using empty data.');
-    hideLoadingScreen();
-    setPaper('Letter-L');
-    renderForms();
-    renderPreview();
+    initApp();
     return;
   }
 
@@ -1991,11 +1837,7 @@ async function loadData() {
     }
 
     clearTimeout(timeoutId);
-    hideLoadingScreen();
-    restoreState();
-    setPaper(currentPaper);
-    renderForms();
-    renderPreview();
+    initApp();
 
   } catch(err) {
     clearTimeout(timeoutId);
@@ -2018,11 +1860,7 @@ function loadFallbackData() {
   KNOWN_SETS    = ['MissingSet'];
   POKEMON_LIST  = ['MissingNo.'];
   BASE_SET_CARDS = SET_CARD_DATA['MissingSet'];
-  hideLoadingScreen();
-  restoreState();
-  setPaper(currentPaper);
-  renderForms();
-  renderPreview();
+  initApp();
 }
 
 loadData();
