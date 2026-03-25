@@ -52,7 +52,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .collapse-btn:hover{color:var(--text);}
 .card-form.collapsed .collapse-btn{transform:rotate(-90deg);}
 .card-form-header{display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
-.card-form-header b{color:var(--accent);}
 .remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
 .remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
 
@@ -82,7 +81,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .page-scale-wrap .page-wrap{transform-origin:top left;margin:0!important;}
 .preview-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .preview-top h2{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.05em;}
-.preview-actions{display:flex;gap:8px;}
 .page-label{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
 .page-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
@@ -152,16 +150,11 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   color:#ddd;
   letter-spacing:.15em;
 }
-.card-slot.empty .empty-slot-label{ display:none; }
-.empty-slot-label{
-  color:#d0d0d0; font-size:.54rem; font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
-}
-
 /* Card content wrapper — vertically centered group */
 .cs-inner{
   display:flex; flex-direction:column; align-items:center;
   width:100%; padding:0 20px;
-  gap:0; overflow:hidden;
+  overflow:hidden;
 }
 
 /* Name: large, bold, serif-adjacent feel */
@@ -201,13 +194,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
 /* Edition: smaller, normal weight */
 .cs-variant-label{
-  font-size:1.1rem; font-weight:400;
-  color:#333;
-  margin-bottom:2px;
-}
-
-/* Code: small, italic */
-.cs-variant{
   font-size:1.1rem; font-weight:400;
   color:#333;
   margin-bottom:2px;
@@ -268,6 +254,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 }
 .card-picker-option:hover,.card-picker-option.highlighted{background:var(--accent-dim);color:var(--accent);}
 .card-picker-option.no-results{color:var(--muted);cursor:default;}
+.pg-label{font-size:.62rem;color:var(--muted);font-weight:400;margin-left:10px;}
 @keyframes loadbar{0%{width:0;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0;margin-left:100%;}}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
@@ -388,10 +375,10 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
   <div id="preview">
     <div class="preview-top">
-      <h2>PREVIEW <span id="pg-label" style="font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.62rem;color:var(--muted);font-weight:400;margin-left:10px;"></span></h2>
+      <h2>PREVIEW <span id="pg-label" class="pg-label"></span></h2>
     </div>
     <div id="pages-container">
-      <div class="empty-state" id="empty-state">
+      <div class="empty-state">
         <div class="empty-icon">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="4" y="3" width="18" height="20" rx="3" stroke="#555"/><path d="M9 8h8M9 12h8M9 16h5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/></svg></div><h3>No cards yet</h3><p>Add a card using the sidebar</p></div></div></div></div>
 </div>
@@ -412,6 +399,9 @@ var KNOWN_SETS    = [];
 var POKEMON_LIST  = [];
 var BASE_SET_CARDS = [];
 var BLANK_SYMBOL_URI = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="%23ddd"/></svg>';
+var CORNER_DOTS = '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
+               + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>';
+var BORDER_TYPES = ['border-dots','border-solid','border-dotted','border-none'];
 
 function getSymbolUrl(setName) {
   var info = SET_DATA[setName];
@@ -422,7 +412,7 @@ function getSymbolUrl(setName) {
 
 // Returns the card object with the given id, or undefined.
 function findCard(id) {
-  return findCard(id);
+  return cards.find(function(c) { return c.id === id; });
 }
 
 // Returns the display string for the currently selected Pokémon filter.
@@ -457,12 +447,23 @@ var collapsedIds = {};
 // ── POKEMON FILTER ───────────────────────────────────
 var activePokemonPickerId = null;
 
+// Single global mousedown handler closes any open picker when clicking outside it
 document.addEventListener('mousedown', function(e) {
-  if (activePokemonPickerId === null) return;
-  var drop  = document.getElementById('poke-picker-drop-'  + activePokemonPickerId);
-  var input = document.getElementById('poke-picker-input-' + activePokemonPickerId);
-  if ((drop && drop.contains(e.target)) || e.target === input) return;
-  closePokemonPicker(activePokemonPickerId);
+  if (activePokemonPickerId !== null) {
+    var pDrop  = document.getElementById('poke-picker-drop-global');
+    var pInput = document.getElementById('poke-picker-input-global');
+    if (!((pDrop && pDrop.contains(e.target)) || e.target === pInput)) closePokemonPicker();
+  }
+  if (activePickerId !== null) {
+    var cDrop  = document.getElementById('picker-drop-'  + activePickerId);
+    var cInput = document.getElementById('picker-input-' + activePickerId);
+    if (!((cDrop && cDrop.contains(e.target)) || e.target === cInput)) closeCardPicker(activePickerId);
+  }
+  if (activeSetPickerId !== null) {
+    var sDrop  = document.getElementById('set-picker-drop-'  + activeSetPickerId);
+    var sInput = document.getElementById('set-picker-input-' + activeSetPickerId);
+    if (!((sDrop && sDrop.contains(e.target)) || e.target === sInput)) closeSetPicker(activeSetPickerId);
+  }
 });
 
 function buildPokemonOptions(filter) {
@@ -473,20 +474,13 @@ function buildPokemonOptions(filter) {
     var dexNum = '#' + String(pi + 1).padStart(4, '0');
     var label = dexNum + ' - ' + p;
     if (!f || label.toLowerCase().indexOf(f) !== -1 || p.toLowerCase().indexOf(f) !== -1) {
-      var isSel = dexNum === pokemonFilter;
-      opts += '<div class="card-picker-option' + (isSel ? ' highlighted' : '') + '"'
+      opts += '<div class="card-picker-option' + (dexNum === pokemonFilter ? ' highlighted' : '') + '"'
             + ' data-pokemon="' + esc(dexNum) + '"'
-            + ' onmousedown="pokemonOptionMousedown(event)">'
+            + ' onmousedown="event.preventDefault();pickPokemon(event,this.dataset.pokemon)">'
             + esc(label) + '</div>';
     }
   }
   return opts || '<div class="card-picker-option no-results">No Pokémon found</div>';
-}
-
-function openPokemonPickerMousedown(e) {
-  e.preventDefault();
-  if (activePokemonPickerId === 'global') { closePokemonPicker(); return; }
-  openPokemonPicker();
 }
 
 function openPokemonPicker() {
@@ -523,32 +517,34 @@ function filterPokemonPicker(value) {
   drop.classList.add('open');
 }
 
-function pokemonOptionMousedown(e) {
+function openPokemonPickerMousedown(e) {
   e.preventDefault();
-  var name = e.currentTarget.dataset.pokemon;
-  pickPokemon(e, name);
+  if (activePokemonPickerId === 'global') { closePokemonPicker(); return; }
+  openPokemonPicker();
 }
 
 var _pendingPokemonChange = null;
 
 function pickPokemon(e, name) {
   e.preventDefault();
-  var newFilter = name;
-  if (newFilter === pokemonFilter) { closePokemonPicker(); return; }
-  // If cards exist, confirm before resetting
+  if (name === pokemonFilter) { closePokemonPicker(); return; }
   if (cards.length > 0) {
-    _pendingPokemonChange = newFilter;
+    _pendingPokemonChange = name;
     closePokemonPicker();
     document.getElementById('pokemon-confirm-modal').classList.add('open');
     return;
   }
-  applyPokemonChange(newFilter);
+  applyPokemonChange(name);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
 
 function confirmPokemonChange() {
   var pending = _pendingPokemonChange;
   _pendingPokemonChange = null;
-  document.getElementById('pokemon-confirm-modal').classList.remove('open');
+  closeModal('pokemon-confirm-modal');
   if (pending !== null) {
     cards = [];
     applyPokemonChange(pending);
@@ -556,7 +552,7 @@ function confirmPokemonChange() {
 }
 
 function closePokemonConfirmModal() {
-  document.getElementById('pokemon-confirm-modal').classList.remove('open');
+  closeModal('pokemon-confirm-modal');
   _pendingPokemonChange = null;
 }
 
@@ -658,20 +654,11 @@ function toggleSerials(checked) {
 
 function matchesPokemonFilter(card) {
   if (!pokemonFilter) return true;
-  var f = pokemonFilter.toUpperCase(); // e.g. '#0025'
-  if (card.primary) {
-    var primaries = card.primary.split(',');
-    for (var i = 0; i < primaries.length; i++) {
-      if (primaries[i].trim().toUpperCase() === f) return true;
-    }
+  var f = pokemonFilter.toUpperCase();
+  function matchesField(field) {
+    return field && field.split(',').some(function(p) { return p.trim().toUpperCase() === f; });
   }
-  if (includeCameo && card.cameo) {
-    var cameos = card.cameo.split(',');
-    for (var j = 0; j < cameos.length; j++) {
-      if (cameos[j].trim().toUpperCase() === f) return true;
-    }
-  }
-  return false;
+  return matchesField(card.primary) || (includeCameo && matchesField(card.cameo));
 }
 
 function setsForPokemon() {
@@ -699,11 +686,9 @@ function toggleCardCollapse(cardId, e) {
 
 function setBorderType(type) {
   currentBorderType = type;
-  // Update border class on all card-grids without re-rendering
   var grids = document.querySelectorAll('.card-grid');
-  var allTypes = ['border-dots','border-solid','border-dotted','border-none'];
   grids.forEach(function(g) {
-    allTypes.forEach(function(c) { g.classList.remove(c); });
+    BORDER_TYPES.forEach(function(c) { g.classList.remove(c); });
     g.classList.add('border-' + type);
   });
 }
@@ -804,16 +789,15 @@ function addCard(data) {
   // Auto-select set if only 1 available
   if (!newCard.set) {
     var availableSets = setsForPokemon();
-    if (availableSets && availableSets.length === 1) {
+    if (availableSets.length === 1) {
       newCard.set = availableSets[0];
-      // Auto-select card if only 1 in that set
       var availableCards = cardsForPokemon(newCard.set);
-      if (availableCards && availableCards.length === 1) {
+      if (availableCards.length === 1) {
         var allCards = SET_CARD_DATA[newCard.set] || [];
         var bc = availableCards[0];
-        newCard.cardKey = allCards.indexOf(bc);
-        newCard.name    = bc.name;
-        newCard.num     = bc.num || '';
+        newCard.cardKey  = allCards.indexOf(bc);
+        newCard.name     = bc.name;
+        newCard.num      = bc.num || '';
         newCard.variants = [];
       }
     }
@@ -844,26 +828,14 @@ function duplicateCard(id) {
 }
 
 
-function toggleVariant(btn, variant) {
+function toggleVariant(btn, variant, isSpecial) {
   var id = parseInt(btn.closest('.card-form').dataset.cardid);
   var c = findCard(id);
   if (!c) return;
-  if (!c.variants) c.variants = [];
-  var idx = c.variants.indexOf(variant);
-  if (idx === -1) { c.variants.push(variant); } else { c.variants.splice(idx, 1); }
-  btn.classList.toggle('selected', c.variants.indexOf(variant) !== -1);
-  updateVariantWarning(id, c);
-  renderPreview();
-}
-
-function toggleSpecialVariant(btn, variant) {
-  var id = parseInt(btn.closest('.card-form').dataset.cardid);
-  var c = findCard(id);
-  if (!c) return;
-  if (!c.specialVariants) c.specialVariants = [];
-  var idx = c.specialVariants.indexOf(variant);
-  if (idx === -1) { c.specialVariants.push(variant); } else { c.specialVariants.splice(idx, 1); }
-  btn.classList.toggle('selected', c.specialVariants.indexOf(variant) !== -1);
+  var arr = isSpecial ? c.specialVariants : c.variants;
+  var idx = arr.indexOf(variant);
+  if (idx === -1) { arr.push(variant); } else { arr.splice(idx, 1); }
+  btn.classList.toggle('selected', arr.indexOf(variant) !== -1);
   updateVariantWarning(id, c);
   renderPreview();
 }
@@ -882,15 +854,8 @@ function updateVariantWarning(cardId, c) {
 function showClearConfirmModal() {
   document.getElementById('clear-confirm-modal').classList.add('open');
 }
-
-function closeClearConfirmModal() {
-  document.getElementById('clear-confirm-modal').classList.remove('open');
-}
-
-function confirmClearAll() {
-  closeClearConfirmModal();
-  clearAll();
-}
+function closeClearConfirmModal() { closeModal('clear-confirm-modal'); }
+function confirmClearAll() { closeClearConfirmModal(); clearAll(); }
 
 function clearAll() {
   cards = [];
@@ -900,23 +865,14 @@ function clearAll() {
 
 function confirmFillAllCards() {
   if (!pokemonFilter) return;
-  // If cards exist, show the dedicated fill-all confirmation modal
   if (cards.length > 0) {
     document.getElementById('fill-confirm-modal').classList.add('open');
     return;
   }
-  // No existing cards — go straight to fill
   fillAllCards();
 }
-
-function closeFillConfirmModal() {
-  document.getElementById('fill-confirm-modal').classList.remove('open');
-}
-
-function confirmFillAll() {
-  closeFillConfirmModal();
-  fillAllCards();
-}
+function closeFillConfirmModal() { closeModal('fill-confirm-modal'); }
+function confirmFillAll() { closeFillConfirmModal(); fillAllCards(); }
 
 function fillAllCards() {
   if (!pokemonFilter) return;
@@ -988,9 +944,22 @@ function restoreState() {
 }
 
 // ── FORMS ────────────────────────────────────────────
+
+// Builds pill button HTML for a list of variant options.
+function buildPillsHTML(options, selected, isSpecial) {
+  if (!options.length) return '';
+  return '<div class="ctrl" style="margin-top:10px;"><div class="edition-pills">'
+    + options.map(function(v) {
+        return '<button class="edition-pill' + (selected.indexOf(v) !== -1 ? ' selected' : '')
+          + '" data-variant="' + esc(v) + '" onclick="toggleVariant(this,this.dataset.variant,' + (isSpecial ? 'true' : 'false') + ')">'
+          + esc(v) + '</button>';
+      }).join('')
+    + '</div></div>';
+}
+
 function buildPickerOptions(selectedKey, filter, cardSet) {
   var allCards = SET_CARD_DATA[cardSet] || BASE_SET_CARDS;
-  var setCards = cardsForPokemon(cardSet) || allCards;
+  var setCards = cardsForPokemon(cardSet);
 
   var f = filter.toLowerCase();
   var opts = setCards.reduce(function(acc, bc) {
@@ -1007,28 +976,21 @@ function buildPickerOptions(selectedKey, filter, cardSet) {
   return opts || '<div class="card-picker-option no-results">No cards found</div>';
 }
 
-// Track which picker is open so we can close it from a single global handler
+// Track which picker is open
 var activePickerId = null;
-
-document.addEventListener('mousedown', function(e) {
-  if (activePickerId === null) return;
-  var drop  = document.getElementById('picker-drop-'  + activePickerId);
-  var input = document.getElementById('picker-input-' + activePickerId);
-  // If click is inside the picker or on the input, let it through
-  if ((drop && drop.contains(e.target)) || e.target === input) return;
-  closeCardPicker(activePickerId);
-});
 
 function openCardPickerMousedown(e, cardId) {
   e.preventDefault();
-  // If this picker is already open, close it (toggle)
-  if (activePickerId === cardId) {
-    closeCardPicker(cardId);
-    return;
-  }
-  // Close any other open picker first
+  if (activePickerId === cardId) { closeCardPicker(cardId); return; }
   if (activePickerId !== null) closeCardPicker(activePickerId);
   openCardPicker(cardId);
+}
+
+function openSetPickerMousedown(e, cardId) {
+  e.preventDefault();
+  if (activeSetPickerId === cardId) { closeSetPicker(cardId); return; }
+  if (activeSetPickerId !== null) closeSetPicker(activeSetPickerId);
+  openSetPicker(cardId);
 }
 
 function openCardPicker(cardId) {
@@ -1092,14 +1054,6 @@ function pickCard(e, cardId, idx) {
 
 var activeSetPickerId = null;
 
-document.addEventListener('mousedown', function(e) {
-  if (activeSetPickerId === null) return;
-  var drop  = document.getElementById('set-picker-drop-'  + activeSetPickerId);
-  var input = document.getElementById('set-picker-input-' + activeSetPickerId);
-  if ((drop && drop.contains(e.target)) || e.target === input) return;
-  closeSetPicker(activeSetPickerId);
-});
-
 function buildSetOptions(selectedSet, filter) {
   var f = filter.toLowerCase();
   var filteredSets = setsForPokemon();
@@ -1107,19 +1061,12 @@ function buildSetOptions(selectedSet, filter) {
     if (!f || s.toLowerCase().indexOf(f) !== -1) {
       acc += '<div class="card-picker-option' + (selectedSet === s ? ' highlighted' : '') + '"'
            + ' data-set="' + esc(s) + '"'
-           + ' onmousedown="setOptionMousedown(event,__SETID__)">'
+           + ' onmousedown="event.preventDefault();pickSet(event,__SETID__,this.dataset.set)">'
            + esc(s) + '</div>';
     }
     return acc;
   }, '');
   return opts || '<div class="card-picker-option no-results">No sets found</div>';
-}
-
-function openSetPickerMousedown(e, cardId) {
-  e.preventDefault();
-  if (activeSetPickerId === cardId) { closeSetPicker(cardId); return; }
-  if (activeSetPickerId !== null) closeSetPicker(activeSetPickerId);
-  openSetPicker(cardId);
 }
 
 function openSetPicker(cardId) {
@@ -1156,11 +1103,6 @@ function filterSetPicker(cardId, value) {
   drop.classList.add('open');
 }
 
-function setOptionMousedown(e, cardId) {
-  e.preventDefault();
-  pickSet(e, cardId, e.currentTarget.dataset.set);
-}
-
 function pickSet(e, cardId, setName) {
   e.preventDefault();
   var c = findCard(cardId);
@@ -1173,7 +1115,7 @@ function pickSet(e, cardId, setName) {
   c.specialVariants = [];
   // Auto-select if only 1 card available in this set
   var availableCards = cardsForPokemon(setName);
-  if (availableCards && availableCards.length === 1) {
+  if (availableCards.length === 1) {
     var allCards = SET_CARD_DATA[setName] || [];
     var bc = availableCards[0];
     c.cardKey = allCards.indexOf(bc);
@@ -1249,19 +1191,6 @@ function renderForms() {
     var scCard   = scd && card.cardKey >= 0 ? scd[card.cardKey] : null;
     var noCard   = !!scd && !scCard;
 
-    // Build pill HTML for a set of variant options
-    function buildPillsHTML(options, selected, toggleFn) {
-      if (!options.length) return '';
-      return '<div class="ctrl" style="margin-top:10px;"><div class="edition-pills">'
-        + options.map(function(v) {
-            var isSel = selected.indexOf(v) !== -1;
-            return '<button class="edition-pill' + (isSel ? ' selected' : '')
-              + '" data-variant="' + esc(v) + '" onclick="' + toggleFn + '(this,this.dataset.variant)">'
-              + esc(v) + '</button>';
-          }).join('')
-        + '</div></div>';
-    }
-
     // Standard Variants
     var variantOptions = [];
     if (scd && card.cardKey >= 0 && scd[card.cardKey]) {
@@ -1277,14 +1206,22 @@ function renderForms() {
         }
       }
     }
-    var variantHTML = buildPillsHTML(variantOptions, card.variants || [], 'toggleVariant');
+    var variantHTML = buildPillsHTML(variantOptions, card.variants || [], false);
 
     // Special Variants
     var specialVarOptions = [];
     if (scd && card.cardKey >= 0 && scd[card.cardKey] && Array.isArray(scd[card.cardKey].specialVariants)) {
       specialVarOptions = scd[card.cardKey].specialVariants;
     }
-    var specialVariantHTML = buildPillsHTML(specialVarOptions, card.specialVariants || [], 'toggleSpecialVariant');
+    var specialVariantHTML = buildPillsHTML(specialVarOptions, card.specialVariants || [], true);
+
+    var cardHeaderSub = (function() {
+      if (!card.name) return '';
+      var fullNum = scCard ? scCard.num : '';
+      return '<span style="color:var(--muted);margin-left:6px;">' + esc(card.name) + '</span>'
+        + (fullNum ? '<span style="color:var(--muted);margin-left:4px;font-size:.85em;"> - ' + esc(fullNum) + '</span>' : '');
+    }());
+    var cardInputVal = scCard ? ' value=' + JSON.stringify(scCard.num + ' — ' + scCard.name) : ' value=""';
 
     return '<div class="card-form" id="form-' + card.id + '" data-cardid="' + card.id + '">'
       // header
@@ -1292,7 +1229,7 @@ function renderForms() {
       +   '<span style="display:flex;align-items:center;gap:4px;">'
       +     '<button class="collapse-btn" tabindex="-1">&#9660;</button>'
       +     '<span style="color:var(--accent);">Card #' + (idx + 1) + '</span>'
-      +     (function(){ if (!card.name) return ''; var scd = SET_CARD_DATA[card.set]; var fullNum = scd && card.cardKey >= 0 && scd[card.cardKey] ? scd[card.cardKey].num : ''; return '<span style="color:var(--muted);margin-left:6px;">' + esc(card.name) + '</span>' + (fullNum ? '<span style="color:var(--muted);margin-left:4px;font-size:.85em;"> - ' + esc(fullNum) + '</span>' : ''); }())
+      +     cardHeaderSub
       +   '</span>'
       +   '<span style="display:flex;align-items:center;gap:2px;">'
       +   '<button class="remove-btn" onclick="duplicateCard(' + card.id + ')" title="Duplicate" style="color:var(--muted);">⧉</button>'
@@ -1317,14 +1254,14 @@ function renderForms() {
       +     '</div>'
       +     '<img class="set-sym-thumb" src="' + imgSrc + '" style="' + (imgSrc ? '' : 'display:none;') + '" alt=""/>'
       +   '</div>'
-      + '</div>'      // name + number: card dropdown for Base Set, manual entry otherwise
+      + '</div>'
       + (SET_CARD_DATA[card.set]
         ? '<div class="ctrl" style="margin-top:10px;"><label>Card</label>'
           + '<div class="card-picker" id="picker-' + card.id + '">'
           + '<input type="text" class="card-picker-input"'
           + ' id="picker-input-' + card.id + '"'
           + ' placeholder="Search or select a card..."'
-          + (function(){ var sc=SET_CARD_DATA[card.set]; return ' value=' + JSON.stringify(card.cardKey>=0&&sc&&sc[card.cardKey]?sc[card.cardKey].num+' — '+sc[card.cardKey].name:''); }())
+          + cardInputVal
           + ' autocomplete="off" readonly'
           + ' onmousedown="openCardPickerMousedown(event, ' + card.id + ')"'
           + ' oninput="filterCardPicker(' + card.id + ', this.value)"'
@@ -1544,14 +1481,12 @@ function buildSlots() {
 // Builds the HTML string for a single card slot.
 // Used by both the live preview renderer and the mobile PDF offscreen builder.
 function buildSlotHTML(card, variantOverride, specialVariantOverride) {
-  var DOTS = '<span class="corner-dot tl"></span><span class="corner-dot tr"></span>'
-           + '<span class="corner-dot bl"></span><span class="corner-dot br"></span>';
   if (!card || !card.name || !card.name.trim()) {
-    return '<div class="card-slot empty">' + DOTS + '</div>';
+    return '<div class="card-slot empty">' + CORNER_DOTS + '</div>';
   }
-  var sym        = card.set ? getSymbolUrl(card.set) : null;
-  var showLabel  = getTotalVariantCount(card) > 1;
-  return '<div class="card-slot">' + DOTS
+  var sym       = card.set ? getSymbolUrl(card.set) : null;
+  var showLabel = getTotalVariantCount(card) > 1;
+  return '<div class="card-slot">' + CORNER_DOTS
     + '<div class="cs-inner">'
     +   '<div class="cs-name">'   + esc(card.name) + '</div>'
     +   (card.num
@@ -1722,14 +1657,17 @@ function splitCSVRow(row) {
 }
 
 function buildDataFromSheets(cardRows, setRows, pokemonRows) {
+  // Splits a comma-separated cell value into a trimmed, non-empty array.
+  function splitCol(val) {
+    return val ? val.split(',').map(function(v) { return v.trim(); }).filter(Boolean) : [];
+  }
+
   // Build SET_DATA from sets sheet
   SET_DATA = {};
   setRows.forEach(function(row) {
     var name = row['Set Name'];
     if (!name) return;
-    SET_DATA[name] = {
-      symbol: (row['Symbol'] || '').trim()
-    };
+    SET_DATA[name] = { symbol: (row['Symbol'] || '').trim() };
   });
 
   // Build SET_CARD_DATA and KNOWN_SETS from cards sheet
@@ -1738,18 +1676,15 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
   cardRows.forEach(function(row) {
     var setName = row['Set Name'];
     if (!setName) return;
-    if (!SET_CARD_DATA[setName]) {
-      SET_CARD_DATA[setName] = [];
-      setsOrder.push(setName);
-    }
+    if (!SET_CARD_DATA[setName]) { SET_CARD_DATA[setName] = []; setsOrder.push(setName); }
     SET_CARD_DATA[setName].push({
-      num:      row['Card Number'] || '',
-      name:     row['Card Name']   || '',
-      variants: row['Standard Variants'] ? row['Standard Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
-      specialVariants: row['Special Variants'] ? row['Special Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
-      serialVariants: row['Serial Number Variants'] ? row['Serial Number Variants'].split(',').map(function(v){return v.trim();}).filter(Boolean) : [],
-      primary:  row['Primary Pokemon'] || '',
-      cameo:    row['Cameo Pokemon']   || '',
+      num:            row['Card Number']          || '',
+      name:           row['Card Name']            || '',
+      variants:       splitCol(row['Standard Variants']),
+      specialVariants:splitCol(row['Special Variants']),
+      serialVariants: splitCol(row['Serial Number Variants']),
+      primary:        row['Primary Pokemon']      || '',
+      cameo:          row['Cameo Pokemon']        || '',
     });
   });
   KNOWN_SETS = setsOrder;
@@ -1757,18 +1692,14 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
   // Build POKEMON_LIST from Pokémon sheet, sorted by dex number
   if (pokemonRows && pokemonRows.length) {
     pokemonRows.sort(function(a, b) {
-      return parseInt(a['Dex Number'] || 0, 10)
-           - parseInt(b['Dex Number'] || 0, 10);
+      return parseInt(a['Dex Number'] || 0, 10) - parseInt(b['Dex Number'] || 0, 10);
     });
-    POKEMON_LIST = pokemonRows.map(function(row) {
-      return (row['Name'] || '').trim();
-    }).filter(Boolean);
+    POKEMON_LIST = pokemonRows.map(function(row) { return (row['Name'] || '').trim(); }).filter(Boolean);
   } else {
-    // Fallback: derive from card data
     var pokeSet = {};
     cardRows.forEach(function(row) {
-      if (row['Primary Pokemon']) row['Primary Pokemon'].split(',').forEach(function(p){ var t=p.trim(); if(t) pokeSet[t]=1; });
-      if (row['Cameo Pokemon'])   row['Cameo Pokemon'].split(',').forEach(function(p){ var t=p.trim(); if(t) pokeSet[t]=1; });
+      splitCol(row['Primary Pokemon']).forEach(function(p) { pokeSet[p] = 1; });
+      splitCol(row['Cameo Pokemon']).forEach(function(p)   { pokeSet[p] = 1; });
     });
     POKEMON_LIST = Object.keys(pokeSet).sort();
   }
@@ -1829,13 +1760,7 @@ async function loadData() {
     var setRows    = parseCSV(setsText);
     var pokemonRows = parseCSV(pokemonText);
 
-    try {
-      buildDataFromSheets(cardRows, setRows, pokemonRows);
-    } catch(parseErr) {
-      console.error('Error parsing sheet data:', parseErr);
-      throw new Error('Parse error: ' + parseErr.message);
-    }
-
+    buildDataFromSheets(cardRows, setRows, pokemonRows);
     clearTimeout(timeoutId);
     initApp();
 
