@@ -150,20 +150,47 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   color:#ddd;
   letter-spacing:.15em;
 }
-/* Card content wrapper — vertically centered group */
+/* Card content wrapper — three fixed zones: top text | symbol | bottom text */
 .cs-inner{
   display:flex; flex-direction:column; align-items:center;
-  width:100%; padding:0 20px;
+  width:100%; height:100%;
+  padding:0 20px;
   overflow:hidden;
+}
+
+/* Top zone: name + number — fixed height, content aligns to bottom */
+.cs-top{
+  flex: 0 0 120px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  width:100%;
+  padding-bottom:8px;
+}
+
+/* Symbol zone: fixed, always at vertical center */
+.cs-symbol-wrap{
+  flex: 0 0 104px;
+  width:84px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cs-symbol{ max-width:80px; max-height:80px; width:auto; height:auto }
+
+/* Bottom zone: set name + variant — fixed height, content aligns to top */
+.cs-bottom{
+  flex: 0 0 112px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  width:100%;
+  padding-top:8px;
 }
 
 /* Name: large, bold, serif-adjacent feel */
 .cs-name{
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.85rem; font-weight:700;
-  color:#111; line-height:1.2;
-  margin-bottom:5px;
+  color:#111; line-height:1.1;
+  margin-bottom:4px;
   width:100%;
+  /* Scale down automatically if text is long */
+  overflow:hidden;
 }
 
 /* Number: bold, prominent */
@@ -171,25 +198,17 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.45rem; font-weight:700;
   color:#111;
-  margin-bottom:12px;
+  margin-bottom:0;
 }
-.cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:12px; }
-
-/* Symbol: large, centered */
-.cs-symbol-wrap{
-  width:84px; height:84px;
-  display:flex; align-items:center; justify-content:center;
-  margin-bottom:10px;
-}
-.cs-symbol{ max-width:80px; max-height:80px; width:auto; height:auto }
-
+.cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:0; }
 
 /* Set name: bold, not italic */
 .cs-set{
   font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;
   font-size:1.2rem; font-weight:700;
-  color:#111; line-height:1.3;
+  color:#111; line-height:1.2;
   margin-bottom:4px;
+  width:100%;
 }
 
 /* Edition: smaller, normal weight */
@@ -1422,8 +1441,33 @@ function renderPreview() {
   document.getElementById('pg-label').textContent =
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
   applyLastScale();
-  requestAnimationFrame(scalePages);
+  requestAnimationFrame(function() { scalePages(); fitCardNames(); });
   saveState();
+}
+
+// Shrink .cs-name font size until it fits within its container width
+function fitCardNames() {
+  var names = document.querySelectorAll('.cs-top .cs-name');
+  names.forEach(function(el) {
+    el.style.fontSize = '';
+    var maxW = el.parentElement ? el.parentElement.offsetWidth : el.offsetWidth;
+    var fontSize = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > maxW + 1 && fontSize > 9) {
+      fontSize -= 0.5;
+      el.style.fontSize = fontSize + 'px';
+    }
+  });
+  // Same for .cs-set in the bottom zone
+  var sets = document.querySelectorAll('.cs-bottom .cs-set');
+  sets.forEach(function(el) {
+    el.style.fontSize = '';
+    var maxW = el.parentElement ? el.parentElement.offsetWidth : el.offsetWidth;
+    var fontSize = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > maxW + 1 && fontSize > 8) {
+      fontSize -= 0.5;
+      el.style.fontSize = fontSize + 'px';
+    }
+  });
 }
 
 // ── UTILS ────────────────────────────────────────────
@@ -1488,18 +1532,22 @@ function buildSlotHTML(card, variantOverride, specialVariantOverride) {
   var showLabel = getTotalVariantCount(card) > 1;
   return '<div class="card-slot">' + CORNER_DOTS
     + '<div class="cs-inner">'
-    +   '<div class="cs-name">'   + esc(card.name) + '</div>'
-    +   (card.num
-          ? '<div class="cs-number">' + esc(card.num) + '</div>'
-          : '<div class="cs-number blank">\u2014</div>')
+    +   '<div class="cs-top">'
+    +     '<div class="cs-name">' + esc(card.name) + '</div>'
+    +     (card.num
+            ? '<div class="cs-number">' + esc(card.num) + '</div>'
+            : '<div class="cs-number blank">\u2014</div>')
+    +   '</div>'
     +   '<div class="cs-symbol-wrap">'
     +     '<img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/>'
     +   '</div>'
-    +   (card.set
-          ? '<div class="cs-set">' + esc(card.set) + '</div>'
-          : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
-    +   (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
-    +   (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+    +   '<div class="cs-bottom">'
+    +     (card.set
+            ? '<div class="cs-set">' + esc(card.set) + '</div>'
+            : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
+    +     (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+    +     (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+    +   '</div>'
     + '</div></div>';
 }
 
