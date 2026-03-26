@@ -54,12 +54,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .card-form-header{display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none;}
 .remove-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
 .remove-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
-.lock-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:all .15s;}
-.lock-btn:hover{color:#f4bdc3;background:rgba(244,189,195,.12);}
-.lock-btn.locked{color:#f4bdc3;}
-.card-form.locked-card .card-form-body input,.card-form.locked-card .card-form-body select,.card-form.locked-card .card-form-body .card-picker-input,.card-form.locked-card .card-form-body .edition-pill{pointer-events:none;opacity:.6;}
-.card-form.locked-card .card-form-body .edition-pill.selected{opacity:1;background:#555566;color:#e8e8e8;border-color:#666677;}
-.card-form.locked-card{border-color:rgba(244,189,195,.35);}
 
 .set-row{display:flex;align-items:center;gap:6px;width:100%;position:relative;}
 .set-row .card-picker{flex:1;min-width:0;}
@@ -187,7 +181,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   display:flex; align-items:center; justify-content:center;
   margin-bottom:10px;
 }
-.cs-symbol{ max-width:80px; max-height:80px; width:auto; height:auto; object-fit:contain; }
+.cs-symbol{ width:80px; height:80px; object-fit:contain; }
 
 
 /* Set name: bold, not italic */
@@ -290,7 +284,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 <div class="modal-overlay" id="clear-confirm-modal" onclick="if(event.target===this)closeClearConfirmModal();">
   <div class="modal-box">
     <div class="modal-title">&#9888; Clear All Cards?</div>
-    <div class="modal-body">This will remove all current cards (locked cards will be preserved). This cannot be undone.</div>
+    <div class="modal-body">This will remove all current cards. This cannot be undone.</div>
     <div class="modal-actions">
       <button class="modal-btn" onclick="closeClearConfirmModal()">Cancel</button>
       <button class="modal-btn modal-btn-confirm" onclick="confirmClearAll()">Yes, Clear All</button>
@@ -449,7 +443,6 @@ var includeSerials = false;
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var collapsedIds = {};
-var lockedIds = {};
 
 // ── POKEMON FILTER ───────────────────────────────────
 var activePokemonPickerId = null;
@@ -553,7 +546,7 @@ function confirmPokemonChange() {
   _pendingPokemonChange = null;
   closeModal('pokemon-confirm-modal');
   if (pending !== null) {
-    cards = cards.filter(function(c) { return lockedIds[c.id]; });
+    cards = [];
     applyPokemonChange(pending);
   }
 }
@@ -814,15 +807,8 @@ function addCard(data) {
 }
 
 function removeCard(id) {
-  if (lockedIds[id]) return; // locked cards cannot be removed
   cards = cards.filter(function(c) { return c.id !== id; });
   delete collapsedIds[id];
-  render();
-}
-
-function toggleLock(id, e) {
-  e.stopPropagation();
-  if (lockedIds[id]) { delete lockedIds[id]; } else { lockedIds[id] = true; }
   render();
 }
 
@@ -872,11 +858,7 @@ function closeClearConfirmModal() { closeModal('clear-confirm-modal'); }
 function confirmClearAll() { closeClearConfirmModal(); clearAll(); }
 
 function clearAll() {
-  cards = cards.filter(function(c) { return lockedIds[c.id]; });
-  // Clean up collapsedIds for removed cards
-  Object.keys(collapsedIds).forEach(function(id) {
-    if (!lockedIds[id]) delete collapsedIds[id];
-  });
+  cards = [];
   localStorage.removeItem('gmState');
   render();
 }
@@ -935,7 +917,6 @@ function saveState() {
       currentPaper:      currentPaper,
       currentBorderType: currentBorderType,
       cardIdCtr:         cardIdCtr,
-      lockedIds:         lockedIds,
     };
     localStorage.setItem('gmState', JSON.stringify(state));
   } catch(e) { /* storage unavailable */ }
@@ -953,7 +934,6 @@ function restoreState() {
     currentPaper      = state.currentPaper      || 'Letter-L';
     currentBorderType = state.currentBorderType || 'dots';
     cardIdCtr         = state.cardIdCtr         || cards.length;
-    lockedIds         = state.lockedIds         || {};
     // Sync UI controls
     var paperSel  = document.getElementById('paper-select');
     var borderSel = document.getElementById('border-select');
@@ -966,14 +946,12 @@ function restoreState() {
 // ── FORMS ────────────────────────────────────────────
 
 // Builds pill button HTML for a list of variant options.
-function buildPillsHTML(options, selected, isSpecial, locked) {
+function buildPillsHTML(options, selected, isSpecial) {
   if (!options.length) return '';
   return '<div class="ctrl" style="margin-top:10px;"><div class="edition-pills">'
     + options.map(function(v) {
         return '<button class="edition-pill' + (selected.indexOf(v) !== -1 ? ' selected' : '')
-          + '" data-variant="' + esc(v) + '"'
-          + (locked ? ' disabled' : ' onclick="toggleVariant(this,this.dataset.variant,' + (isSpecial ? 'true' : 'false') + ')"')
-          + '>'
+          + '" data-variant="' + esc(v) + '" onclick="toggleVariant(this,this.dataset.variant,' + (isSpecial ? 'true' : 'false') + ')">'
           + esc(v) + '</button>';
       }).join('')
     + '</div></div>';
@@ -1228,14 +1206,14 @@ function renderForms() {
         }
       }
     }
-    var variantHTML = buildPillsHTML(variantOptions, card.variants || [], false, !!lockedIds[card.id]);
+    var variantHTML = buildPillsHTML(variantOptions, card.variants || [], false);
 
     // Special Variants
     var specialVarOptions = [];
     if (scd && card.cardKey >= 0 && scd[card.cardKey] && Array.isArray(scd[card.cardKey].specialVariants)) {
       specialVarOptions = scd[card.cardKey].specialVariants;
     }
-    var specialVariantHTML = buildPillsHTML(specialVarOptions, card.specialVariants || [], true, !!lockedIds[card.id]);
+    var specialVariantHTML = buildPillsHTML(specialVarOptions, card.specialVariants || [], true);
 
     var cardHeaderSub = (function() {
       if (!card.name) return '';
@@ -1245,7 +1223,7 @@ function renderForms() {
     }());
     var cardInputVal = scCard ? ' value=' + JSON.stringify(scCard.num + ' — ' + scCard.name) : ' value=""';
 
-    return '<div class="card-form' + (lockedIds[card.id] ? ' locked-card' : '') + '" id="form-' + card.id + '" data-cardid="' + card.id + '">'
+    return '<div class="card-form" id="form-' + card.id + '" data-cardid="' + card.id + '">'
       // header
       + '<div class="card-form-header" onclick="toggleCardCollapse(' + card.id + ',event)">'
       +   '<span style="display:flex;align-items:center;gap:4px;">'
@@ -1255,12 +1233,7 @@ function renderForms() {
       +   '</span>'
       +   '<span style="display:flex;align-items:center;gap:2px;">'
       +   '<button class="remove-btn" onclick="duplicateCard(' + card.id + ')" title="Duplicate" style="color:var(--muted);">⧉</button>'
-      +   '<button class="lock-btn' + (lockedIds[card.id] ? ' locked' : '') + '" onclick="toggleLock(' + card.id + ',event)" title="' + (lockedIds[card.id] ? 'Unlock card' : 'Lock card') + '">'
-      +     (lockedIds[card.id]
-          ? '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'
-          : '<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>')
-      +   '</button>'
-      +   '<button class="remove-btn" onclick="removeCard(' + card.id + ')"' + (lockedIds[card.id] ? ' disabled style="opacity:.25;cursor:not-allowed;"' : '') + '>&#x2715;</button>'
+      +   '<button class="remove-btn" onclick="removeCard(' + card.id + ')">&#x2715;</button>'
       +   '</span>'
       + '</div>'
       + '<div class="card-form-body">'
@@ -1273,8 +1246,9 @@ function renderForms() {
       +         ' placeholder="Search or select a set..."'
       +         ' value="' + esc(card.set || '') + '"'
       +         ' autocomplete="off" readonly'
-      +         (lockedIds[card.id] ? '' : ' onmousedown="openSetPickerMousedown(event,' + card.id + ')" oninput="filterSetPicker(' + card.id + ',this.value)" onkeydown="setPickerKeydown(event,' + card.id + ')"')
-      +         '/>'
+      +         ' onmousedown="openSetPickerMousedown(event,' + card.id + ')"'
+      +         ' oninput="filterSetPicker(' + card.id + ',this.value)"'
+      +         ' onkeydown="setPickerKeydown(event,' + card.id + ')"/>'
       +       '<div class="card-picker-dropdown" id="set-picker-drop-' + card.id + '">'
       +       '</div>'
       +     '</div>'
@@ -1289,8 +1263,9 @@ function renderForms() {
           + ' placeholder="Search or select a card..."'
           + cardInputVal
           + ' autocomplete="off" readonly'
-          + (lockedIds[card.id] ? '' : ' onmousedown="openCardPickerMousedown(event, ' + card.id + ')" oninput="filterCardPicker(' + card.id + ', this.value)" onkeydown="cardPickerKeydown(event, ' + card.id + ')"')
-          + '/>'
+          + ' onmousedown="openCardPickerMousedown(event, ' + card.id + ')"'
+          + ' oninput="filterCardPicker(' + card.id + ', this.value)"'
+          + ' onkeydown="cardPickerKeydown(event, ' + card.id + ')"/>'
           + '<div class="card-picker-dropdown" id="picker-drop-' + card.id + '">'
           + buildPickerOptions(card.cardKey, '', card.set)
           + '</div></div></div>'
