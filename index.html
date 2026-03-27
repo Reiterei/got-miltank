@@ -144,11 +144,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   display:flex; align-items:center; justify-content:center;
 }
 .card-slot.empty::after{
-  content:"BLANK";
-  font-size:1.6rem;
-  font-weight:700;
-  color:#ddd;
-  letter-spacing:.15em;
+  content:"";
 }
 /* Card content wrapper — three fixed zones: top text | symbol | bottom text */
 .cs-inner{
@@ -220,6 +216,11 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
 
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;text-align:center;}
+.card-slot.promo{background:white;display:flex;align-items:center;justify-content:center;}
+.promo-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;}
+.promo-title{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:1.45rem;font-weight:700;color:#111;text-align:center;line-height:1.2;}
+.promo-logo{width:80px;height:auto;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;}
+.promo-qr{width:60px;height:60px;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges;}
 .empty-icon{width:60px;height:60px;border:1.5px dashed var(--border);border-radius:12px;display:grid;place-items:center;}
 .empty-state h3{font-size:.85rem;color:var(--muted);font-weight:400;}
 .empty-state p{font-size:.65rem;color:var(--muted);opacity:.7;}
@@ -376,6 +377,12 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
           </select>
         </div>
       </div>
+      <div style="display:flex;justify-content:center;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.68rem;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="hide-qr-checkbox" onchange="toggleHideQR(this.checked)" style="width:auto;"/>
+          Hide QR Card
+        </label>
+      </div>
       <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);text-align:center;">
         <div style="font-size:.72rem;color:var(--text);line-height:1.9;margin-bottom:4px;">Got-Miltank? v1.0.0 by <span style="color:var(--accent);">u/Reiterei</span></div>
         <div style="font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:4px;">Updated through "Ascending Heroes"</div>
@@ -485,6 +492,7 @@ var includeCameo = false;
 var includeSerials = false;
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
+var hideQRCard = false;
 var collapsedIds = {};
 
 // ── POKEMON FILTER ───────────────────────────────────
@@ -736,6 +744,11 @@ function setBorderType(type) {
   });
 }
 
+function toggleHideQR(checked) {
+  hideQRCard = checked;
+  renderPreview();
+}
+
 function toggleSettings() {
   var panel = document.getElementById('settings-panel');
   if (panel) panel.classList.toggle('open');
@@ -959,6 +972,7 @@ function saveState() {
       includeSerials:    includeSerials,
       currentPaper:      currentPaper,
       currentBorderType: currentBorderType,
+      hideQRCard:        hideQRCard,
       cardIdCtr:         cardIdCtr,
     };
     localStorage.setItem('gmState', JSON.stringify(state));
@@ -976,6 +990,9 @@ function restoreState() {
     includeSerials    = !!state.includeSerials;
     currentPaper      = state.currentPaper      || 'Letter-L';
     currentBorderType = state.currentBorderType || 'dots';
+    hideQRCard        = !!state.hideQRCard;
+    var hideQREl = document.getElementById('hide-qr-checkbox');
+    if (hideQREl) hideQREl.checked = hideQRCard;
     cardIdCtr         = state.cardIdCtr         || cards.length;
     // Sync UI controls
     var paperSel  = document.getElementById('paper-select');
@@ -1441,7 +1458,17 @@ function renderPreview() {
     chunks.push(chunk);
   }
 
+  // Determine if last page has empty slots — if so, the last empty slot gets a promo card
+  var lastChunk = chunks[chunks.length - 1];
+  var promoSlotIndex = -1;
+  if (lastChunk && lastChunk[lastChunk.length - 1] === null) {
+    for (var li = lastChunk.length - 1; li >= 0; li--) {
+      if (lastChunk[li] === null) { promoSlotIndex = li; break; }
+    }
+  }
+
   container.innerHTML = chunks.map(function(chunk, pi) {
+    var isLastPage = pi === chunks.length - 1;
     return '<div class="page-label">Page ' + (pi + 1) + ' of ' + chunks.length + '</div>'
       + '<div class="page-scale-wrap" data-page-w="' + pageWpx + '" data-page-h="' + pageHpx + '">'
       + '<div class="page-wrap" style="'
@@ -1454,7 +1481,15 @@ function renderPreview() {
       +     'grid-template-rows:repeat('    + p.rows + ',' + CARD_H_PX + 'px);'
       +     "gap:0;"
       +   '">'
-      +   chunk.map(function(slot) {
+      +   chunk.map(function(slot, si) {
+            if (!hideQRCard && isLastPage && promoSlotIndex >= 0 && si === promoSlotIndex) {
+              return '<div class="card-slot promo">' + CORNER_DOTS
+                + '<div class="promo-inner">'
+                + '<div class="promo-title">Got Miltank?</div>'
+                + '<canvas class="promo-logo" id="promo-canvas-logo"></canvas>'
+                + '<canvas class="promo-qr" id="promo-canvas-qr"></canvas>'
+                + '</div></div>';
+            }
             return buildSlotHTML(slot ? slot.card : null, slot ? slot.variant : null, slot ? slot.specialVariant : null);
           }).join('')
       +   '</div>'
@@ -1466,7 +1501,45 @@ function renderPreview() {
     n + ' card' + (n !== 1 ? 's' : '') + ' \xb7 ' + chunks.length + ' page' + (chunks.length !== 1 ? 's' : '');
   applyLastScale();
   requestAnimationFrame(function() { scalePages(); fitCardNames(); });
+  if (promoSlotIndex >= 0) renderPromoCanvases(document);
   saveState();
+}
+
+// Draws promo images onto canvas elements pixel-perfectly (no browser interpolation).
+// Works on both the live preview DOM and an offscreen container.
+// scale: pixel multiplier (default: devicePixelRatio for preview, 3 for PDF)
+function renderPromoCanvases(root, scale) {
+  var LOGO_URL = 'https://reiterei.github.io/got-miltank/bw-logo.png';
+  var QR_URL   = 'https://reiterei.github.io/got-miltank/qr-code.png';
+  var dpr = scale || window.devicePixelRatio || 1;
+
+  function drawToCanvas(canvas, url, displayW, displayH) {
+    return new Promise(function(resolve) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        var bw = Math.round(displayW * dpr);
+        var bh = Math.round(displayH * dpr);
+        canvas.width  = bw;
+        canvas.height = bh;
+        canvas.style.width  = displayW + 'px';
+        canvas.style.height = displayH + 'px';
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, bw, bh);
+        resolve();
+      };
+      img.onerror = resolve;
+      img.src = url;
+    });
+  }
+
+  var promises = [];
+  var logoCanvases = root.querySelectorAll ? root.querySelectorAll('#promo-canvas-logo') : [];
+  var qrCanvases   = root.querySelectorAll ? root.querySelectorAll('#promo-canvas-qr')   : [];
+  logoCanvases.forEach(function(c) { promises.push(drawToCanvas(c, LOGO_URL, 80, 80)); });
+  qrCanvases.forEach(function(c)   { promises.push(drawToCanvas(c, QR_URL,   60, 60)); });
+  return Promise.all(promises);
 }
 
 // Shrink .cs-name font size until it fits within its container width
@@ -1607,9 +1680,19 @@ async function savePDF() {
 
     // Build off-screen container — positioned off-screen but fully rendered by the browser.
     // Use opacity:0 (not visibility:hidden) so html2canvas can still capture the content.
+    // Determine promo slot for last page (same logic as renderPreview)
+    var lastChunk2 = chunks2[chunks2.length - 1];
+    var promoSlotIndex2 = -1;
+    if (lastChunk2 && lastChunk2[lastChunk2.length - 1] === null) {
+      for (var li2 = lastChunk2.length - 1; li2 >= 0; li2--) {
+        if (lastChunk2[li2] === null) { promoSlotIndex2 = li2; break; }
+      }
+    }
+
     offscreen = document.createElement('div');
     offscreen.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + pageWpx2 + 'px;opacity:0;pointer-events:none;';
-    chunks2.forEach(function(chunk2) {
+    chunks2.forEach(function(chunk2, pi2) {
+      var isLastPage2 = pi2 === chunks2.length - 1;
       var pageEl = document.createElement('div');
       pageEl.className = 'page-wrap';
       pageEl.style.cssText = 'width:' + pageWpx2 + 'px;height:' + pageHpx2 + 'px;padding:' + marginPx2 + 'px;background:white;display:flex;align-items:center;justify-content:center;';
@@ -1617,13 +1700,22 @@ async function savePDF() {
         + 'grid-template-columns:repeat(' + p2.cols + ',' + CARD_W_PX + 'px);'
         + 'grid-template-rows:repeat(' + p2.rows + ',' + CARD_H_PX + 'px);'
         + 'gap:0;">'
-        + chunk2.map(function(slot) {
+        + chunk2.map(function(slot, si2) {
+            if (!hideQRCard && isLastPage2 && promoSlotIndex2 >= 0 && si2 === promoSlotIndex2) {
+              return '<div class="card-slot promo">' + CORNER_DOTS
+                + '<div class="promo-inner">'
+                + '<div class="promo-title">Got Miltank?</div>'
+                + '<canvas class="promo-logo" id="promo-canvas-logo"></canvas>'
+                + '<canvas class="promo-qr" id="promo-canvas-qr"></canvas>'
+                + '</div></div>';
+            }
             return buildSlotHTML(slot ? slot.card : null, slot ? slot.variant : null, slot ? slot.specialVariant : null);
           }).join('')
         + '</div>';
       offscreen.appendChild(pageEl);
     });
     document.body.appendChild(offscreen);
+    if (promoSlotIndex2 >= 0) await renderPromoCanvases(offscreen, 3);
     // Wait two frames for the browser to lay out and paint the off-screen content
     await new Promise(function(resolve) { requestAnimationFrame(function() { requestAnimationFrame(resolve); }); });
   }
@@ -1642,6 +1734,12 @@ async function savePDF() {
       ? offscreen.querySelectorAll('.page-wrap')
       : document.querySelectorAll('#pages-container .page-wrap');
     if (!pageWraps.length) return;
+
+    // Re-render promo canvases at scale 3 to match html2canvas supersampling
+    var pdfRoot = offscreen || document.getElementById('pages-container');
+    if (pdfRoot && pdfRoot.querySelector('#promo-canvas-logo')) {
+      await renderPromoCanvases(pdfRoot, 3);
+    }
 
     for (var i = 0; i < pageWraps.length; i++) {
       if (i > 0) doc.addPage([pageWmm, pageHmm], orient);
@@ -1678,12 +1776,23 @@ async function savePDF() {
       doc.addImage(imgData, 'JPEG', 0, 0, pageWmm, pageHmm);
     }
 
-    doc.save('card-templates.pdf');
+    var pokeSlug = '';
+    if (pokemonFilter) {
+      var dexIdx = parseInt(pokemonFilter.replace('#',''), 10) - 1;
+      var pokeName = (dexIdx >= 0 && POKEMON_LIST[dexIdx]) ? POKEMON_LIST[dexIdx] : pokemonFilter;
+      pokeSlug = pokeName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() + '-';
+    }
+    doc.save(pokeSlug + 'card-templates.pdf');
   } catch (err) {
     alert('PDF generation failed: ' + err.message);
     console.error(err);
   } finally {
     if (offscreen && offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
+    // Restore preview promo canvases to display scale
+    var previewRoot = document.getElementById('pages-container');
+    if (previewRoot && previewRoot.querySelector('#promo-canvas-logo')) {
+      renderPromoCanvases(previewRoot);
+    }
     if (pdfBtn) {
       var hasAny = cards.some(function(c) { return c.name && c.name.trim(); });
       pdfBtn.disabled = !hasAny;
