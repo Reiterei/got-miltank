@@ -988,17 +988,6 @@ function restoreState() {
 
 // ── FORMS ────────────────────────────────────────────
 
-// Builds pill button HTML for a list of variant options.
-function buildPillsHTML(options, selected, isSpecial) {
-  if (!options.length) return '';
-  return '<div class="ctrl" style="margin-top:10px;"><div class="edition-pills">'
-    + options.map(function(v) {
-        return '<button class="edition-pill' + (selected.indexOf(v) !== -1 ? ' selected' : '')
-          + '" data-variant="' + esc(v) + '" onclick="toggleVariant(this,this.dataset.variant,' + (isSpecial ? 'true' : 'false') + ')">'
-          + esc(v) + '</button>';
-      }).join('')
-    + '</div></div>';
-}
 
 function buildPickerOptions(selectedKey, filter, cardSet) {
   var allCards = SET_CARD_DATA[cardSet] || BASE_SET_CARDS;
@@ -1270,7 +1259,6 @@ function renderForms() {
           }).join('')
         + '</div></div>';
     }
-    var specialVariantHTML = '';
 
     var cardHeaderSub = (function() {
       if (!card.name) return '';
@@ -1324,12 +1312,10 @@ function renderForms() {
           + ' oninput="filterCardPicker(' + card.id + ', this.value)"'
           + ' onkeydown="cardPickerKeydown(event, ' + card.id + ')"/>'
           + '<div class="card-picker-dropdown" id="picker-drop-' + card.id + '">'
-          + buildPickerOptions(card.cardKey, '', card.set)
           + '</div></div></div>'
         : '<div style="font-size:.62rem;color:var(--muted);padding:6px 2px;">Select a set to choose a card.</div>')
       // variants
       + (!noCard ? variantHTML : '')
-      + (!noCard ? specialVariantHTML : '')
       + (function() {
           // Show warning if card is selected but no variant or special variant is chosen
           if (!scCard) return '';
@@ -1522,6 +1508,7 @@ function buildSlots() {
     var variantOpts = [];
     var hasVariantData = false;
     var sclP = SET_CARD_DATA[cd.set];
+    var specialOpts = [];
     if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
       var cdData = sclP[cd.cardKey];
       if (Array.isArray(cdData.variants) && cdData.variants.length) {
@@ -1535,11 +1522,7 @@ function buildSlots() {
           variantOpts = cdSerials.concat(variantOpts);
         }
       }
-    }
-    var specialOpts = [];
-    if (sclP && cd.cardKey >= 0 && sclP[cd.cardKey]) {
-      var cdSpecial = sclP[cd.cardKey].specialVariants;
-      if (Array.isArray(cdSpecial) && cdSpecial.length) specialOpts = cdSpecial;
+      if (Array.isArray(cdData.specialVariants) && cdData.specialVariants.length) specialOpts = cdData.specialVariants;
     }
     var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
     var hasPrOnly1  = !hasVariantData && specialOpts.length === 0;
