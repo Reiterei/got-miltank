@@ -1,7 +1,7 @@
 /* Gill Sans is a system font — no import needed */
 :root{--bg:#0f0f12;--surface:#18181e;--surface2:#1e1e26;--border:#2a2a36;--accent:#f4bdc3;--accent-dim:rgba(244,189,195,0.09);--text:#f0f0ee;--muted:#8888a0;--muted2:#55556a;--radius:8px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;justify-content:center;}
+body{font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow:hidden;display:flex;justify-content:center;}
 .app-container{width:100%;max-width:1536px;display:flex;flex-direction:column;flex:1;overflow:hidden;}
 
 .app{display:grid;grid-template-columns:350px 1fr;flex:1;overflow:hidden;}
