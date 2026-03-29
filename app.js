@@ -325,6 +325,7 @@ function setBorderType(type) {
     BORDER_TYPES.forEach(function(c) { g.classList.remove(c); });
     g.classList.add('border-' + type);
   });
+  saveState();
 }
 
 function toggleHideQR(checked) {
