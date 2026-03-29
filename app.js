@@ -96,15 +96,24 @@ function buildPickerHTML(items, isSelectedFn, labelFn, handlerFn, valueFn, empty
 
 function openPickerEl(drop, input, html) {
   if (!drop || !input) return;
-  input.removeAttribute('readonly');
+  // First open: keep readonly so keyboard doesn't appear; second click removes it
   input.value = '';
-  input.focus();
   drop.innerHTML = html;
   drop.classList.add('open');
   setTimeout(function() {
     var sel = drop.querySelector('.highlighted');
     if (sel) sel.scrollIntoView({ block: 'nearest' });
   }, 0);
+}
+
+function isMobileView() {
+  return window.matchMedia('(max-width: 600px), (max-height: 500px) and (orientation: landscape)').matches;
+}
+
+function enablePickerTyping(input) {
+  if (!input) return;
+  input.removeAttribute('readonly');
+  input.focus();
 }
 
 function closePickerEl(drop, input, restoreValue) {
@@ -156,8 +165,13 @@ function filterPokemonPicker(value) {
 
 function openPokemonPickerMousedown(e) {
   e.preventDefault();
-  if (activePokemonPickerId === 'global') { closePokemonPicker(); return; }
+  if (activePokemonPickerId === 'global') {
+    var input = document.getElementById('poke-picker-input-global');
+    if (isMobileView() && input && input.hasAttribute('readonly')) { enablePickerTyping(input); return; }
+    closePokemonPicker(); return;
+  }
   openPokemonPicker();
+  if (!isMobileView()) enablePickerTyping(document.getElementById('poke-picker-input-global'));
 }
 
 var _pendingPokemonChange = null;
@@ -610,16 +624,26 @@ var activePickerId = null;
 
 function openCardPickerMousedown(e, cardId) {
   e.preventDefault();
-  if (activePickerId === cardId) { closeCardPicker(cardId); return; }
+  if (activePickerId === cardId) {
+    var input = document.getElementById('picker-input-' + cardId);
+    if (isMobileView() && input && input.hasAttribute('readonly')) { enablePickerTyping(input); return; }
+    closeCardPicker(cardId); return;
+  }
   if (activePickerId !== null) closeCardPicker(activePickerId);
   openCardPicker(cardId);
+  if (!isMobileView()) enablePickerTyping(document.getElementById('picker-input-' + cardId));
 }
 
 function openSetPickerMousedown(e, cardId) {
   e.preventDefault();
-  if (activeSetPickerId === cardId) { closeSetPicker(cardId); return; }
+  if (activeSetPickerId === cardId) {
+    var input = document.getElementById('set-picker-input-' + cardId);
+    if (isMobileView() && input && input.hasAttribute('readonly')) { enablePickerTyping(input); return; }
+    closeSetPicker(cardId); return;
+  }
   if (activeSetPickerId !== null) closeSetPicker(activeSetPickerId);
   openSetPicker(cardId);
+  if (!isMobileView()) enablePickerTyping(document.getElementById('set-picker-input-' + cardId));
 }
 
 function openCardPicker(cardId) {
@@ -749,7 +773,7 @@ function renderForms() {
 
   var pf = document.getElementById('pokemon-filter-section');
   if (pf) {
-    pf.innerHTML = '<div style="margin-bottom:8px;">'
+    pf.innerHTML = '<div id="poke-filter-wrap" style="margin-bottom:8px;">'
       + (miltankPlaying
         ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--surface2);border:1px solid var(--accent);border-radius:7px;padding:7px 10px;">'
           + '<input type="range" id="miltank-volume" min="0" max="100" value="' + miltankVolume + '"'
@@ -758,11 +782,11 @@ function renderForms() {
           + '<button onclick="stopMiltankPlayer()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 5px;border-radius:4px;line-height:1;transition:color .15s;" onmouseover="this.style.color=\'var(--text)\'" onmouseout="this.style.color=\'var(--muted)\'">✕</button>'
           + '</div>'
         : '')
-      + '<div style="display:flex;gap:6px;align-items:stretch;">'
+      + '<div id="poke-picker-row" style="display:flex;gap:6px;align-items:stretch;">'
       + '<div class="card-picker" id="poke-picker-wrap" style="flex:2;">'
       + '<input type="text" class="card-picker-input"'
       + ' id="poke-picker-input-global"'
-      + ' placeholder="Pokémon Species"'
+      + ' placeholder="Search or select a Pokémon"'
       + ' value="' + esc(pokemonDisplayValue()) + '"'
       + ' autocomplete="off" readonly'
       + ' onmousedown="openPokemonPickerMousedown(event)"'
@@ -778,7 +802,7 @@ function renderForms() {
           + '</button>'
         : '')
       + '</div>'
-      + '<div style="display:flex;gap:12px;margin-top:12px;justify-content:center;">'
+      + '<div id="poke-checkboxes-row" style="display:flex;gap:12px;margin-top:12px;justify-content:center;">'
       + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;">'
       + '<input type="checkbox" id="cameo-checkbox"'
       + (includeCameo ? ' checked' : '')
@@ -845,6 +869,7 @@ function renderForms() {
       +   '</span>'
       + '</div>'
       + '<div class="card-form-body">'
+      + '<div class="dropdowns-row">'
       + '<div class="ctrl">'
       +   '<div class="set-row">'
       +     '<div class="card-picker" id="set-picker-' + card.id + '">'
@@ -876,6 +901,7 @@ function renderForms() {
           + '<div class="card-picker-dropdown" id="picker-drop-' + card.id + '">'
           + '</div></div></div>'
         : '<div style="font-size:.62rem;color:var(--muted);padding:6px 2px;">Select a set to choose a card.</div>')
+      + '</div>'
       + (!noCard ? variantHTML : '')
       + (function() {
           if (!scCard) return '';
