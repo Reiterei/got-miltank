@@ -93,6 +93,8 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 /* Border type variants */
 .border-solid .card-slot  { border: 1px solid #999; margin: -1px; }
 .border-dotted .card-slot { border: 1px dashed #999; margin: -1px; }
+.border-solid .card-grid  { border: 1px solid #999; }
+.border-dotted .card-grid { border: 1px dashed #999; }
 .border-none .card-slot   { border: 1px solid transparent; margin: -1px; }
 
 /* Dots mode: hide the border, show corner dots */
