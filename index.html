@@ -43,7 +43,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .ctrl select,.ctrl input{background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif;font-size:.68rem;padding:6px 8px;outline:none;transition:border-color .15s;width:100%;}
 .ctrl select:focus,.ctrl input:focus{border-color:var(--accent);}
 .ctrl input::placeholder{color:var(--muted2);}
-.ctrl input:disabled{opacity:.4;cursor:not-allowed;}
 
 .card-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:14px;margin-bottom:10px;text-align:center;}
 .card-form.collapsed{gap:0;}
@@ -95,7 +94,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
    - Symbol: large, centered, generous space
    - Set name: bold, not italic
    - Edition: small, normal weight
-   - Code: small, italic, in parens
 -------------------------------------------------------------------- */
 .card-slot{
   width:240px; height:336px;
@@ -134,18 +132,16 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   display: none;
 }
 .border-dots .corner-dot { display: block; }
-.corner-dot.tl { top: 0; left: 0; transform: translate(-50%, -50%); }
-.corner-dot.tr { top: 0; right: 0; transform: translate(50%, -50%); }
-.corner-dot.bl { bottom: 0; left: 0; transform: translate(-50%, 50%); }
-.corner-dot.br { bottom: 0; right: 0; transform: translate(50%, 50%); }
+.corner-dot.tl { top: -1px; left: -1px; transform: translate(-50%, -50%); }
+.corner-dot.tr { top: -1px; right: -1px; transform: translate(50%, -50%); }
+.corner-dot.bl { bottom: -1px; left: -1px; transform: translate(-50%, 50%); }
+.corner-dot.br { bottom: -1px; right: -1px; transform: translate(50%, 50%); }
 
 .card-slot.empty{
   background:white;
   display:flex; align-items:center; justify-content:center;
 }
-.card-slot.empty::after{
-  content:"";
-}
+
 /* Card content wrapper — three fixed zones: top text | symbol | bottom text */
 .cs-inner{
   display:flex; flex-direction:column; align-items:center;
@@ -196,7 +192,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   color:#111;
   margin-bottom:0;
 }
-.cs-number.blank{ color:#ccc; font-weight:400; font-size:1.25rem; margin-bottom:0; }
 
 /* Set name: bold, not italic */
 .cs-set{
@@ -213,7 +208,6 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
   color:#333;
   margin-bottom:2px;
 }
-
 
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;text-align:center;}
 .card-slot.promo{background:white;display:flex;align-items:center;justify-content:center;}
@@ -385,7 +379,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
       </div>
       <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);text-align:center;">
         <div style="font-size:.72rem;color:var(--text);line-height:1.9;margin-bottom:4px;">Got-Miltank? v1.0.0 by <span style="color:var(--accent);">u/Reiterei</span></div>
-        <div style="font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:4px;">Updated through "Ascending Heroes"</div>
+        <div style="font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:4px;">Updated through "Perfect Order"</div>
         <div style="font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:10px;">Notice a mistake? Please send me a message on Reddit!</div>
         <div style="font-size:.62rem;color:var(--muted);line-height:1.9;">
           <div>Special thanks to <span style="color:var(--accent);">u/TylerRmazer</span> for the Pokémon Card Database</div>
@@ -518,32 +512,26 @@ document.addEventListener('mousedown', function(e) {
   }
 });
 
-function buildPokemonOptions(filter) {
-  var f = filter.toLowerCase();
-  var opts = '';
-  for (var pi = 0; pi < POKEMON_LIST.length; pi++) {
-    var p = POKEMON_LIST[pi];
-    var dexNum = '#' + String(pi + 1).padStart(4, '0');
-    var label = dexNum + ' - ' + p;
-    if (!f || label.toLowerCase().indexOf(f) !== -1 || p.toLowerCase().indexOf(f) !== -1) {
-      opts += '<div class="card-picker-option' + (dexNum === pokemonFilter ? ' highlighted' : '') + '"'
-            + ' data-pokemon="' + esc(dexNum) + '"'
-            + ' onmousedown="event.preventDefault();pickPokemon(event,this.dataset.pokemon)">'
-            + esc(label) + '</div>';
-    }
-  }
-  return opts || '<div class="card-picker-option no-results">No Pokémon found</div>';
+// ── GENERIC PICKER HELPERS ───────────────────────────
+// Builds a list of picker option divs from an array of items.
+// isSelectedFn(item) → bool, labelFn(item) → string, handlerFn(item) → inline handler string
+function buildPickerHTML(items, isSelectedFn, labelFn, handlerFn, valueFn, emptyMsg) {
+  var opts = items.reduce(function(acc, item) {
+    return acc + '<div class="card-picker-option' + (isSelectedFn(item) ? ' highlighted' : '') + '"'
+      + ' data-value="' + esc(String(valueFn(item))) + '"'
+      + ' onmousedown="' + handlerFn(item) + '">'
+      + esc(labelFn(item)) + '</div>';
+  }, '');
+  return opts || '<div class="card-picker-option no-results">' + emptyMsg + '</div>';
 }
 
-function openPokemonPicker() {
-  var drop  = document.getElementById('poke-picker-drop-global');
-  var input = document.getElementById('poke-picker-input-global');
+// Opens a picker: clears input, populates drop, scrolls to highlighted.
+function openPickerEl(drop, input, html) {
   if (!drop || !input) return;
-  activePokemonPickerId = 'global';
   input.removeAttribute('readonly');
   input.value = '';
   input.focus();
-  drop.innerHTML = buildPokemonOptions('');
+  drop.innerHTML = html;
   drop.classList.add('open');
   setTimeout(function() {
     var sel = drop.querySelector('.highlighted');
@@ -551,15 +539,45 @@ function openPokemonPicker() {
   }, 0);
 }
 
+// Closes a picker: removes open class, restores input to restoreValue.
+function closePickerEl(drop, input, restoreValue) {
+  if (drop) drop.classList.remove('open');
+  if (input) { input.value = restoreValue; input.setAttribute('readonly', ''); }
+}
+
+function buildPokemonOptions(filter) {
+  var f = filter.toLowerCase();
+  var items = [];
+  for (var pi = 0; pi < POKEMON_LIST.length; pi++) {
+    var dexNum = '#' + String(pi + 1).padStart(4, '0');
+    var label  = dexNum + ' - ' + POKEMON_LIST[pi];
+    if (!f || label.toLowerCase().indexOf(f) !== -1) items.push({ dexNum: dexNum, label: label });
+  }
+  return buildPickerHTML(items,
+    function(it) { return it.dexNum === pokemonFilter; },
+    function(it) { return it.label; },
+    function(it) { return 'event.preventDefault();pickPokemon(event,\'' + it.dexNum.replace(/'/g, "\\'") + '\')'; },
+    function(it) { return it.dexNum; },
+    'No Pokémon found'
+  );
+}
+
+function openPokemonPicker() {
+  activePokemonPickerId = 'global';
+  openPickerEl(
+    document.getElementById('poke-picker-drop-global'),
+    document.getElementById('poke-picker-input-global'),
+    buildPokemonOptions('')
+  );
+}
+
 function closePokemonPicker() {
   activePokemonPickerId = null;
-  var drop  = document.getElementById('poke-picker-drop-global');
-  var input = document.getElementById('poke-picker-input-global');
-  if (drop) drop.classList.remove('open');
-  if (input) {
-    input.value = pokemonDisplayValue();
-    input.setAttribute('readonly', '');
-  }
+  closePickerEl(
+    document.getElementById('poke-picker-drop-global'),
+    document.getElementById('poke-picker-input-global'),
+    pokemonDisplayValue()
+  );
 }
 
 function filterPokemonPicker(value) {
@@ -656,7 +674,7 @@ function pickerKeyNav(e, drop, onEnter, onEscape) {
 function pokemonPickerKeydown(e) {
   pickerKeyNav(e,
     document.getElementById('poke-picker-drop-global'),
-    function(h) { pickPokemon(e, h.dataset.pokemon); },
+    function(h) { pickPokemon(e, h.dataset.value); },
     closePokemonPicker
   );
 }
@@ -664,7 +682,7 @@ function pokemonPickerKeydown(e) {
 function cardPickerKeydown(e, cardId) {
   pickerKeyNav(e,
     document.getElementById('picker-drop-' + cardId),
-    function(h) { pickCard(e, cardId, parseInt(h.dataset.idx)); },
+    function(h) { pickCard(e, cardId, parseInt(h.dataset.value)); },
     function() { closeCardPicker(cardId); }
   );
 }
@@ -672,7 +690,7 @@ function cardPickerKeydown(e, cardId) {
 function setPickerKeydown(e, cardId) {
   pickerKeyNav(e,
     document.getElementById('set-picker-drop-' + cardId),
-    function(h) { pickSet(e, cardId, h.dataset.set); },
+    function(h) { pickSet(e, cardId, h.dataset.value); },
     function() { closeSetPicker(cardId); }
   );
 }
@@ -908,6 +926,15 @@ function updateVariantWarning(cardId, c) {
 }
 
 
+// When includeSerials is on and a card has serial variants,
+// drop Non-Holo from standard variants and prepend the serials.
+function applySerialSubstitution(variants, cardData) {
+  if (!includeSerials) return variants;
+  var serials = Array.isArray(cardData.serialVariants) ? cardData.serialVariants : [];
+  if (!serials.length) return variants;
+  return serials.concat(variants.filter(function(v) { return v !== 'Non-Holo'; }));
+}
+
 function showClearConfirmModal() {
   document.getElementById('clear-confirm-modal').classList.add('open');
 }
@@ -933,32 +960,23 @@ function confirmFillAll() { closeFillConfirmModal(); fillAllCards(); }
 
 function fillAllCards() {
   if (!pokemonFilter) return;
-  // Wipe existing cards and replace with every matching card for the selected Pokémon
   cards = [];
   cardIdCtr = 0;
-  var sets = setsForPokemon();
-  sets.forEach(function(setName) {
+  setsForPokemon().forEach(function(setName) {
     var allCards = SET_CARD_DATA[setName] || [];
-    var matching = cardsForPokemon(setName);
-    matching.forEach(function(bc) {
-      var idx = allCards.indexOf(bc);
-      var variants = Array.isArray(bc.variants) ? bc.variants.slice() : [];
-      var serialVariants = Array.isArray(bc.serialVariants) ? bc.serialVariants : [];
-      // Mirror the serial substitution logic from renderForms/renderPreview:
-      // when includeSerials is on and this card has serials, drop Non-Holo and prepend serials
-      if (includeSerials && serialVariants.length > 0) {
-        variants = variants.filter(function(v) { return v !== 'Non-Holo'; });
-        variants = serialVariants.concat(variants);
-      }
-      var specialVariants = Array.isArray(bc.specialVariants) ? bc.specialVariants.slice() : [];
+    cardsForPokemon(setName).forEach(function(bc) {
+      var variants = applySerialSubstitution(
+        Array.isArray(bc.variants) ? bc.variants.slice() : [],
+        bc
+      );
       cards.push({
         id:              ++cardIdCtr,
         name:            bc.name,
         num:             bc.num || '',
         set:             setName,
-        cardKey:         idx,
+        cardKey:         allCards.indexOf(bc),
         variants:        variants,
-        specialVariants: specialVariants,
+        specialVariants: Array.isArray(bc.specialVariants) ? bc.specialVariants.slice() : [],
       });
     });
   });
@@ -1007,23 +1025,25 @@ function restoreState() {
 // ── FORMS ────────────────────────────────────────────
 
 
-function buildPickerOptions(selectedKey, filter, cardSet) {
+function buildPickerOptions(selectedKey, filter, cardSet, cardId) {
   var allCards = SET_CARD_DATA[cardSet] || BASE_SET_CARDS;
   var setCards = cardsForPokemon(cardSet);
-
   var f = filter.toLowerCase();
-  var opts = setCards.reduce(function(acc, bc) {
+  var items = setCards.reduce(function(acc, bc) {
     var i = allCards.indexOf(bc);
     var label = bc.num + ' \u2014 ' + bc.name;
     if (!f || label.toLowerCase().indexOf(f) !== -1 || bc.name.toLowerCase().indexOf(f) !== -1) {
-      acc += '<div class="card-picker-option' + (selectedKey === i ? ' highlighted' : '') + '"'
-           + ' data-idx="' + i + '"'
-           + ' onmousedown="pickCard(event, __CARDID__, ' + i + ')">'
-           + esc(label) + '</div>';
+      acc.push({ i: i, label: label });
     }
     return acc;
-  }, '');
-  return opts || '<div class="card-picker-option no-results">No cards found</div>';
+  }, []);
+  return buildPickerHTML(items,
+    function(it) { return it.i === selectedKey; },
+    function(it) { return it.label; },
+    function(it) { return 'pickCard(event,' + cardId + ',' + it.i + ')'; },
+    function(it) { return it.i; },
+    'No cards found'
+  );
 }
 
 // Track which picker is open
@@ -1044,44 +1064,33 @@ function openSetPickerMousedown(e, cardId) {
 }
 
 function openCardPicker(cardId) {
-  var drop  = document.getElementById('picker-drop-'  + cardId);
-  var input = document.getElementById('picker-input-' + cardId);
-  if (!drop || !input) return;
   var c = findCard(cardId);
   activePickerId = cardId;
-  input.removeAttribute('readonly');
-  input.value = '';
-  input.focus();
-  drop.innerHTML = buildPickerOptions(c ? c.cardKey : -1, '', c ? c.set : '').replace(/__CARDID__/g, cardId);
-  drop.classList.add('open');
-  // Scroll to selected option
-  setTimeout(function() {
-    var sel = drop.querySelector('.highlighted');
-    if (sel) sel.scrollIntoView({ block: 'nearest' });
-  }, 0);
+  openPickerEl(
+    document.getElementById('picker-drop-' + cardId),
+    document.getElementById('picker-input-' + cardId),
+    buildPickerOptions(c ? c.cardKey : -1, '', c ? c.set : '', cardId)
+  );
 }
 
 function closeCardPicker(cardId) {
   if (activePickerId === cardId) activePickerId = null;
-  var drop = document.getElementById('picker-drop-' + cardId);
-  if (drop) drop.classList.remove('open');
-  // Restore input value to selected card name and make readonly again
   var c = findCard(cardId);
-  var input = document.getElementById('picker-input-' + cardId);
-  if (input && c) {
-    var scd = SET_CARD_DATA[c.set];
-    input.value = c.cardKey >= 0 && scd && scd[c.cardKey]
+  var scd = c && SET_CARD_DATA[c.set];
+  closePickerEl(
+    document.getElementById('picker-drop-' + cardId),
+    document.getElementById('picker-input-' + cardId),
+    c && c.cardKey >= 0 && scd && scd[c.cardKey]
       ? scd[c.cardKey].num + ' — ' + scd[c.cardKey].name
-      : '';
-    input.setAttribute('readonly', '');
-  }
+      : ''
+  );
 }
 
 function filterCardPicker(cardId, value) {
   var drop = document.getElementById('picker-drop-' + cardId);
   var c = findCard(cardId);
   if (!drop) return;
-  drop.innerHTML = buildPickerOptions(c ? c.cardKey : -1, value, c ? c.set : '').replace(/__CARDID__/g, cardId);
+  drop.innerHTML = buildPickerOptions(c ? c.cardKey : -1, value, c ? c.set : '', cardId);
   drop.classList.add('open');
 }
 
@@ -1104,52 +1113,43 @@ function pickCard(e, cardId, idx) {
 
 var activeSetPickerId = null;
 
-function buildSetOptions(selectedSet, filter) {
+function buildSetOptions(selectedSet, filter, cardId) {
   var f = filter.toLowerCase();
-  var filteredSets = setsForPokemon();
-  var opts = filteredSets.reduce(function(acc, s) {
-    if (!f || s.toLowerCase().indexOf(f) !== -1) {
-      acc += '<div class="card-picker-option' + (selectedSet === s ? ' highlighted' : '') + '"'
-           + ' data-set="' + esc(s) + '"'
-           + ' onmousedown="event.preventDefault();pickSet(event,__SETID__,this.dataset.set)">'
-           + esc(s) + '</div>';
-    }
-    return acc;
-  }, '');
-  return opts || '<div class="card-picker-option no-results">No sets found</div>';
+  var items = setsForPokemon().filter(function(s) { return !f || s.toLowerCase().indexOf(f) !== -1; });
+  return buildPickerHTML(items,
+    function(s) { return s === selectedSet; },
+    function(s) { return s; },
+    function(s) { return 'event.preventDefault();pickSet(event,' + cardId + ',\'' + s.replace(/'/g, "\\'") + '\')'; },
+    function(s) { return s; },
+    'No sets found'
+  );
 }
 
 function openSetPicker(cardId) {
-  var drop  = document.getElementById('set-picker-drop-'  + cardId);
-  var input = document.getElementById('set-picker-input-' + cardId);
-  if (!drop || !input) return;
   var c = findCard(cardId);
   activeSetPickerId = cardId;
-  input.removeAttribute('readonly');
-  input.value = '';
-  input.focus();
-  drop.innerHTML = buildSetOptions(c ? c.set : '', '').replace(/__SETID__/g, cardId);
-  drop.classList.add('open');
-  setTimeout(function() {
-    var sel = drop.querySelector('.highlighted');
-    if (sel) sel.scrollIntoView({ block: 'nearest' });
-  }, 0);
+  openPickerEl(
+    document.getElementById('set-picker-drop-' + cardId),
+    document.getElementById('set-picker-input-' + cardId),
+    buildSetOptions(c ? c.set : '', '', cardId)
+  );
 }
 
 function closeSetPicker(cardId) {
   if (activeSetPickerId === cardId) activeSetPickerId = null;
-  var drop  = document.getElementById('set-picker-drop-'  + cardId);
-  var input = document.getElementById('set-picker-input-' + cardId);
-  if (drop) drop.classList.remove('open');
   var c = findCard(cardId);
-  if (input && c) { input.value = c.set || ''; input.setAttribute('readonly', ''); }
+  closePickerEl(
+    document.getElementById('set-picker-drop-' + cardId),
+    document.getElementById('set-picker-input-' + cardId),
+    c ? c.set || '' : ''
+  );
 }
 
 function filterSetPicker(cardId, value) {
   var drop = document.getElementById('set-picker-drop-' + cardId);
   var c = findCard(cardId);
   if (!drop) return;
-  drop.innerHTML = buildSetOptions(c ? c.set : '', value).replace(/__SETID__/g, cardId);
+  drop.innerHTML = buildSetOptions(c ? c.set : '', value, cardId);
   drop.classList.add('open');
 }
 
@@ -1249,13 +1249,7 @@ function renderForms() {
       if (Array.isArray(cardData.variants) && cardData.variants.length) {
         variantOptions = cardData.variants.slice();
       }
-      if (includeSerials) {
-        var cardSerials = cardData.serialVariants || [];
-        if (cardSerials.length) {
-          variantOptions = variantOptions.filter(function(v) { return v !== 'Non-Holo'; });
-          variantOptions = cardSerials.concat(variantOptions);
-        }
-      }
+      variantOptions = applySerialSubstitution(variantOptions, cardData);
     }
     // Special Variants
     var specialVarOptions = [];
@@ -1364,11 +1358,7 @@ function getTotalVariantCount(card) {
   var sclR = SET_CARD_DATA[card.set];
   if (!sclR || card.cardKey < 0 || !sclR[card.cardKey]) return 0;
   var cdR = sclR[card.cardKey];
-  var stdVars = Array.isArray(cdR.variants) ? cdR.variants.slice() : [];
-  if (includeSerials && Array.isArray(cdR.serialVariants) && cdR.serialVariants.length) {
-    stdVars = stdVars.filter(function(v) { return v !== 'Non-Holo'; });
-    stdVars = cdR.serialVariants.concat(stdVars);
-  }
+  var stdVars = applySerialSubstitution(Array.isArray(cdR.variants) ? cdR.variants.slice() : [], cdR);
   var specVars = Array.isArray(cdR.specialVariants) ? cdR.specialVariants : [];
   return stdVars.length + specVars.length;
 }
@@ -1480,7 +1470,7 @@ function renderPreview() {
       +   '<div class="card-grid border-' + currentBorderType + '" style="'
       +     'grid-template-columns:repeat(' + p.cols + ',' + CARD_W_PX + 'px);'
       +     'grid-template-rows:repeat('    + p.rows + ',' + CARD_H_PX + 'px);'
-      +     "gap:0;"
+      +     'gap:0;'
       +   '">'
       +   chunk.map(function(slot, si) {
             if (!hideQRCard && isLastPage && promoSlotIndex >= 0 && si === promoSlotIndex) {
@@ -1589,13 +1579,7 @@ function buildSlots() {
         variantOpts = cdData.variants.slice();
         hasVariantData = true;
       }
-      if (includeSerials) {
-        var cdSerials = cdData.serialVariants || [];
-        if (cdSerials.length) {
-          variantOpts = variantOpts.filter(function(v) { return v !== 'Non-Holo'; });
-          variantOpts = cdSerials.concat(variantOpts);
-        }
-      }
+      variantOpts = applySerialSubstitution(variantOpts, cdData);
       if (Array.isArray(cdData.specialVariants) && cdData.specialVariants.length) specialOpts = cdData.specialVariants;
     }
     var hasPrChoice = variantOpts.length > 1 && cd.variants && cd.variants.length > 0;
