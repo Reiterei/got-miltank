@@ -1197,6 +1197,9 @@ function buildSlotHTML(card, variantOverride, specialVariantOverride) {
         + '<img class="cs-card-image" src="' + imgUrl + '" alt="' + esc(card.name) + '"'
         + ' onerror="this.closest(\'.card-image-slot\').classList.add(\'img-failed\');this.style.display=\'none\';"'
         + '/>'
+        + (showLabel && (variantOverride || specialVariantOverride)
+            ? '<div class="cs-image-variant-label">' + esc(variantOverride || specialVariantOverride) + '</div>'
+            : '')
         + '<div class="cs-inner cs-image-fallback">'
         +   '<div class="cs-top">'
         +     '<div class="cs-name">' + esc(card.name) + '</div>'
