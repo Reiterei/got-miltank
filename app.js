@@ -26,6 +26,14 @@ function getSymbolUrl(setName) {
   return 'symbols/' + symbol;
 }
 
+function getScrydexImageUrl(setName, cardNum) {
+  var info = SET_DATA[setName];
+  if (!info || !info.scrydexId || !cardNum) return null;
+  // Card number may be "41/102" or "041/102" — scrydex wants just the numeric part before the slash
+  var num = String(cardNum).split('/')[0].replace(/^0+/, '') || cardNum.split('/')[0];
+  return 'https://images.scrydex.com/pokemon/' + info.scrydexId + '-' + num + '/large';
+}
+
 // Returns the card object with the given id, or undefined.
 function findCard(id) {
   return cards.find(function(c) { return c.id === id; });
@@ -59,6 +67,7 @@ var includeSerials = false;
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var hideQRCard = false;
+var showCardImages = false;
 var collapsedIds = {};
 
 // ── POKEMON FILTER ───────────────────────────────────
@@ -347,6 +356,12 @@ function toggleHideQR(checked) {
   renderPreview();
 }
 
+function toggleShowCardImages(checked) {
+  showCardImages = checked;
+  saveState();
+  renderPreview();
+}
+
 function toggleSettings() {
   var panel = document.getElementById('settings-panel');
   if (panel) panel.classList.toggle('open');
@@ -568,6 +583,7 @@ function saveState() {
       currentPaper:      currentPaper,
       currentBorderType: currentBorderType,
       hideQRCard:        hideQRCard,
+      showCardImages:    showCardImages,
       cardIdCtr:         cardIdCtr,
     };
     localStorage.setItem('gmState', JSON.stringify(state));
@@ -586,8 +602,11 @@ function restoreState() {
     currentPaper      = state.currentPaper      || 'Letter-L';
     currentBorderType = state.currentBorderType || 'dots';
     hideQRCard        = !!state.hideQRCard;
+    showCardImages    = !!state.showCardImages;
     var hideQREl = document.getElementById('hide-qr-checkbox');
     if (hideQREl) hideQREl.checked = hideQRCard;
+    var showImgEl = document.getElementById('show-card-images-checkbox');
+    if (showImgEl) showImgEl.checked = showCardImages;
     cardIdCtr         = state.cardIdCtr         || cards.length;
     var paperSel  = document.getElementById('paper-select');
     var borderSel = document.getElementById('border-select');
@@ -1169,6 +1188,31 @@ function buildSlotHTML(card, variantOverride, specialVariantOverride) {
   }
   var sym       = card.set ? getSymbolUrl(card.set) : null;
   var showLabel = getTotalVariantCount(card) > 1;
+
+  // Card image mode
+  if (showCardImages) {
+    var imgUrl = card.num ? getScrydexImageUrl(card.set, card.num) : null;
+    if (imgUrl) {
+      return '<div class="card-slot card-image-slot">' + CORNER_DOTS
+        + '<img class="cs-card-image" src="' + imgUrl + '" alt="' + esc(card.name) + '"'
+        + ' onerror="this.closest(\'.card-image-slot\').classList.add(\'img-failed\');this.style.display=\'none\';"'
+        + '/>'
+        + '<div class="cs-inner cs-image-fallback">'
+        +   '<div class="cs-top">'
+        +     '<div class="cs-name">' + esc(card.name) + '</div>'
+        +     (card.num ? '<div class="cs-number">' + esc(card.num) + '</div>' : '<div class="cs-number blank">\u2014</div>')
+        +   '</div>'
+        +   '<div class="cs-symbol-wrap"><img class="cs-symbol" src="' + (sym || BLANK_SYMBOL_URI) + '" alt=""/></div>'
+        +   '<div class="cs-bottom">'
+        +     (card.set ? '<div class="cs-set">' + esc(card.set) + '</div>' : '<div class="cs-set" style="color:#ccc;">\u2014</div>')
+        +     (showLabel && variantOverride        ? '<div class="cs-variant-label">' + esc(variantOverride)        + '</div>' : '')
+        +     (showLabel && specialVariantOverride ? '<div class="cs-variant-label">' + esc(specialVariantOverride) + '</div>' : '')
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }
+  }
+
   return '<div class="card-slot">' + CORNER_DOTS
     + '<div class="cs-inner">'
     +   '<div class="cs-top">'
@@ -1372,7 +1416,7 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
   setRows.forEach(function(row) {
     var name = row['Set Name'];
     if (!name) return;
-    SET_DATA[name] = { symbol: (row['Symbol'] || '').trim() };
+    SET_DATA[name] = { symbol: (row['Symbol'] || '').trim(), scrydexId: (row['Scrydex ID'] || '').trim() };
   });
 
   SET_CARD_DATA = {};
