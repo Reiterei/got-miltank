@@ -291,6 +291,8 @@ function isRareVariant(variant) {
   if (!variant) return false;
   return RARE_KEYWORDS.some(function(kw) { return variant.indexOf(kw) !== -1; });
 }
+
+function toggleCameo(checked) {
   includeCameo = checked;
   render();
 }
