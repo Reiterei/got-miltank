@@ -26,7 +26,8 @@ function getSymbolUrl(setName) {
   return 'symbols/' + symbol;
 }
 
-function getScrydexImageUrl(setName, cardNum) {
+function getScrydexImageUrl(setName, cardNum, customImageUrl) {
+  if (customImageUrl) return customImageUrl;
   var info = SET_DATA[setName];
   if (!info || !info.scrydexId || !cardNum) return null;
   // Card number may be "41/102" or "041/102" — scrydex wants just the numeric part before the slash
@@ -1191,7 +1192,9 @@ function buildSlotHTML(card, variantOverride, specialVariantOverride) {
 
   // Card image mode
   if (showCardImages) {
-    var imgUrl = card.num ? getScrydexImageUrl(card.set, card.num) : null;
+    var scd2 = SET_CARD_DATA[card.set];
+    var scCard2 = scd2 && card.cardKey >= 0 ? scd2[card.cardKey] : null;
+    var imgUrl = card.num ? getScrydexImageUrl(card.set, card.num, scCard2 ? scCard2.imageUrl : '') : null;
     if (imgUrl) {
       return '<div class="card-slot card-image-slot">' + CORNER_DOTS
         + '<img class="cs-card-image" src="' + imgUrl + '" alt="' + esc(card.name) + '"'
@@ -1436,6 +1439,7 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
       serialVariants: splitCol(row['Serial Number Variants']),
       primary:        row['Primary Pokemon']      || '',
       cameo:          row['Cameo Pokemon']        || '',
+      imageUrl:       (row['Image URL'] || '').trim(),
     });
   });
   KNOWN_SETS = setsOrder;
