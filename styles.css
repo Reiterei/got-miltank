@@ -321,7 +321,7 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 
 /* Card image mode */
 .card-image-slot{position:relative;overflow:hidden;background:#111;}
-.cs-card-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.cs-card-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;filter:grayscale(100%);}
 .cs-image-fallback{display:none;}
 .card-image-slot.img-failed .cs-card-image{display:none!important;}
 .card-image-slot.img-failed .cs-image-fallback{display:flex!important;flex-direction:column;}
