@@ -31,7 +31,7 @@ function getScrydexImageUrl(setName, cardNum) {
   if (!info || !info.scrydexId || !cardNum) return null;
   // Card number may be "41/102" or "041/102" — scrydex wants just the numeric part before the slash
   var num = String(cardNum).split('/')[0].replace(/^0+/, '') || cardNum.split('/')[0];
-  return 'https://images.scrydex.com/pokemon/' + info.scrydexId + '-' + num + '/large';
+  return 'https://images.scrydex.com/pokemon/' + info.scrydexId + '-' + num + '/medium';
 }
 
 // Returns the card object with the given id, or undefined.
