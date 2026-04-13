@@ -318,3 +318,10 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .modal-btn:hover{border-color:var(--text);color:var(--text);}
 .modal-btn-confirm{background:var(--accent);color:#111;border-color:var(--accent);}
 .modal-btn-confirm:hover{background:#e0a8af;border-color:#e0a8af;color:#111;}
+
+/* Card image mode */
+.card-image-slot{position:relative;overflow:hidden;background:#111;}
+.cs-card-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.cs-image-fallback{display:none;}
+.card-image-slot.img-failed .cs-card-image{display:none!important;}
+.card-image-slot.img-failed .cs-image-fallback{display:flex!important;flex-direction:column;}
