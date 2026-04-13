@@ -1151,11 +1151,12 @@ function buildSlots() {
   var slots = [];
   for (var ci = 0; ci < cards.length; ci++) {
     var cd = cards[ci];
+    var sclP = SET_CARD_DATA[cd.set];
+    var cdData = sclP && cd.cardKey >= 0 ? sclP[cd.cardKey] : null;
+    if (cdData && !matchesPokemonFilter(cdData)) continue;
     var variantOpts = [];
     var hasVariantData = false;
-    var sclP = SET_CARD_DATA[cd.set];
     var specialOpts = [];
-    var cdData = sclP && cd.cardKey >= 0 ? sclP[cd.cardKey] : null;
     if (cdData) {
       if (Array.isArray(cdData.variants) && cdData.variants.length) {
         variantOpts = cdData.variants.slice();
