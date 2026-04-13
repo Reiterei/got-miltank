@@ -342,13 +342,24 @@ function toggleCardCollapse(cardId, e) {
   if (isCollapsed) { collapsedIds[cardId] = true; } else { delete collapsedIds[cardId]; }
 }
 
-function setBorderType(type) {
-  currentBorderType = type;
+function getEffectiveBorderType() {
+  return showCardImages ? 'none' : currentBorderType;
+}
+
+function applyBorderToGrids() {
+  var effective = getEffectiveBorderType();
   var grids = document.querySelectorAll('.card-grid');
   grids.forEach(function(g) {
     BORDER_TYPES.forEach(function(c) { g.classList.remove(c); });
-    g.classList.add('border-' + type);
+    g.classList.add('border-' + effective);
   });
+  var borderSel = document.getElementById('border-select');
+  if (borderSel) borderSel.disabled = showCardImages;
+}
+
+function setBorderType(type) {
+  currentBorderType = type;
+  applyBorderToGrids();
   saveState();
 }
 
@@ -359,6 +370,7 @@ function toggleHideQR(checked) {
 
 function toggleShowCardImages(checked) {
   showCardImages = checked;
+  applyBorderToGrids();
   saveState();
   renderPreview();
 }
@@ -612,7 +624,7 @@ function restoreState() {
     var paperSel  = document.getElementById('paper-select');
     var borderSel = document.getElementById('border-select');
     if (paperSel)  paperSel.value  = currentPaper;
-    if (borderSel) borderSel.value = currentBorderType;
+    if (borderSel) { borderSel.value = currentBorderType; borderSel.disabled = showCardImages; }
     return true;
   } catch(e) { return false; }
 }
