@@ -1559,3 +1559,15 @@ function loadFallbackData() {
 }
 
 loadData();
+
+(function() {
+  fetch('https://api.countapi.xyz/hit/got-miltank.reiterei/visits')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var el = document.getElementById('visitor-counter');
+      if (el && data && data.value) {
+        el.textContent = data.value.toLocaleString() + ' people like Miltank';
+      }
+    })
+    .catch(function() {});
+}());
