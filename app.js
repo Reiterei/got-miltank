@@ -1194,7 +1194,7 @@ function buildSlotHTML(card, variantOverride, specialVariantOverride) {
   if (showCardImages) {
     var scd2 = SET_CARD_DATA[card.set];
     var scCard2 = scd2 && card.cardKey >= 0 ? scd2[card.cardKey] : null;
-    var imgUrl = card.num ? getScrydexImageUrl(card.set, card.num, scCard2 ? scCard2.imageUrl : '') : null;
+    var imgUrl = getScrydexImageUrl(card.set, card.num, scCard2 ? scCard2.imageUrl : '');
     if (imgUrl) {
       return '<div class="card-slot card-image-slot">' + CORNER_DOTS
         + '<img class="cs-card-image" src="' + imgUrl + '" alt="' + esc(card.name) + '"'
