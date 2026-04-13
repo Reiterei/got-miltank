@@ -325,3 +325,4 @@ aside{border-right:1px solid var(--border);display:flex;flex-direction:column;ba
 .cs-image-fallback{display:none;}
 .card-image-slot.img-failed .cs-card-image{display:none!important;}
 .card-image-slot.img-failed .cs-image-fallback{display:flex!important;flex-direction:column;}
+.cs-image-variant-label{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:.55rem;font-weight:700;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;letter-spacing:.04em;pointer-events:none;}
