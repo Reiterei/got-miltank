@@ -65,6 +65,7 @@ var cardIdCtr    = 0;
 var pokemonFilter = ''; // '' = All
 var includeCameo = false;
 var includeSerials = false;
+var includeRare = false;
 var currentPaper = 'Letter-L';
 var currentBorderType = 'dots';
 var hideQRCard = false;
@@ -284,8 +285,18 @@ function setPickerKeydown(e, cardId) {
   );
 }
 
-function toggleCameo(checked) {
+var RARE_KEYWORDS = ['Trainer Deck', 'E3', 'PokéTour'];
+
+function isRareVariant(variant) {
+  if (!variant) return false;
+  return RARE_KEYWORDS.some(function(kw) { return variant.indexOf(kw) !== -1; });
+}
   includeCameo = checked;
+  render();
+}
+
+function toggleRare(checked) {
+  includeRare = checked;
   render();
 }
 
@@ -312,6 +323,7 @@ function toggleSerials(checked) {
 
 function matchesPokemonFilter(card) {
   if (!pokemonFilter) return true;
+  if (card.rare && !includeRare) return false;
   var f = pokemonFilter.toUpperCase();
   function matchesField(field) {
     return field && field.split(',').some(function(p) { return p.trim().toUpperCase() === f; });
@@ -581,6 +593,7 @@ function saveState() {
       pokemonFilter:     pokemonFilter,
       includeCameo:      includeCameo,
       includeSerials:    includeSerials,
+      includeRare:       includeRare,
       currentPaper:      currentPaper,
       currentBorderType: currentBorderType,
       hideQRCard:        hideQRCard,
@@ -600,6 +613,7 @@ function restoreState() {
     pokemonFilter     = state.pokemonFilter     || '';
     includeCameo      = !!state.includeCameo;
     includeSerials    = !!state.includeSerials;
+    includeRare       = !!state.includeRare;
     currentPaper      = state.currentPaper      || 'Letter-L';
     currentBorderType = state.currentBorderType || 'dots';
     hideQRCard        = !!state.hideQRCard;
@@ -833,6 +847,11 @@ function renderForms() {
       + (includeSerials ? ' checked' : '')
       + ' onchange="toggleSerials(this.checked)" style="width:auto;"/>'
       + 'Include EX Serial Numbers</label>'
+      + '<label style="display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;">'
+      + '<input type="checkbox" id="rare-checkbox"'
+      + (includeRare ? ' checked' : '')
+      + ' onchange="toggleRare(this.checked)" style="width:auto;"/>'
+      + 'Include Extremely Rare Cards</label>'
       + '</div>'
       + '</div>';
   }
@@ -1171,11 +1190,13 @@ function buildSlots() {
       var visibleSelected = variantOpts.length > 1 && cd.variants && cd.variants.length
         ? cd.variants.filter(function(v) { return variantOpts.indexOf(v) !== -1; })
         : variantOpts.length === 1 ? [variantOpts[0]] : [null];
+      visibleSelected = visibleSelected.filter(function(v) { return includeRare || !isRareVariant(v); });
       visibleSelected.forEach(function(variant) {
         slots.push({ card: cd, variant: variant, specialVariant: null });
       });
     }
     var selSpecials = specialOpts.length && cd.specialVariants && cd.specialVariants.length ? cd.specialVariants : [];
+    selSpecials = selSpecials.filter(function(sh) { return includeRare || !isRareVariant(sh); });
     selSpecials.forEach(function(sh) {
       slots.push({ card: cd, variant: null, specialVariant: sh });
     });
@@ -1440,6 +1461,7 @@ function buildDataFromSheets(cardRows, setRows, pokemonRows) {
       primary:        row['Primary Pokemon']      || '',
       cameo:          row['Cameo Pokemon']        || '',
       imageUrl:       (row['Image URL'] || '').trim(),
+      rare:           (row['Rare Card'] || '').trim().toLowerCase() === 'yes',
     });
   });
   KNOWN_SETS = setsOrder;
